@@ -55,7 +55,7 @@ class SummaryController extends Controller
         $rows = Transaction::query()
             ->where('user_id', $request->user()->id)
             ->where('type', $type)
-            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$month])
+            ->forMonth($month)
             ->join('categories', 'categories.id', '=', 'transactions.category_id')
             ->selectRaw('categories.id as category_id, categories.name, categories.color, categories.icon, SUM(transactions.amount) as total')
             ->groupBy('categories.id', 'categories.name', 'categories.color', 'categories.icon')
@@ -76,7 +76,7 @@ class SummaryController extends Controller
     {
         $sums = Transaction::query()
             ->where('user_id', $request->user()->id)
-            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$month])
+            ->forMonth($month)
             ->selectRaw('type, SUM(amount) as total')
             ->groupBy('type')
             ->pluck('total', 'type');

@@ -28,7 +28,7 @@ class BudgetController extends Controller
         $spentByCategory = Transaction::query()
             ->where('user_id', $request->user()->id)
             ->where('type', 'expense')
-            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$month])
+            ->forMonth($month)
             ->selectRaw('category_id, SUM(amount) as total')
             ->groupBy('category_id')
             ->pluck('total', 'category_id');
