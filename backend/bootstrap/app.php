@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Sanctum SPA(Cookie)認証: config/sanctum.php の stateful ドメインからの
+        // リクエストにEnsureFrontendRequestsAreStatefulミドルウェアを適用する
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
