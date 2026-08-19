@@ -27,3 +27,20 @@ export interface ApiErrorPayload {
 export function isApiError(error: unknown): error is { response: { status: number; data: ApiErrorPayload } } {
   return axios.isAxiosError(error) && error.response !== undefined;
 }
+
+/** Laravelの {message, errors: {field: [msg, ...]}} 形式から、フィールドごとの先頭メッセージを取り出す。 */
+export function getFieldErrors(error: unknown): Record<string, string> {
+  if (!isApiError(error) || !error.response.data.errors) return {};
+
+  return Object.fromEntries(
+    Object.entries(error.response.data.errors).map(([field, messages]) => [field, messages[0]]),
+  );
+}
+
+/** フィールドに紐付かない一般的なエラーメッセージを取り出す(例: システムエラー、ネットワーク切断)。 */
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (isApiError(error) && error.response.data.message) {
+    return error.response.data.message;
+  }
+  return fallback;
+}

@@ -20,6 +20,13 @@ interface AuthContextValue {
     password_confirmation: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (input: {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -75,9 +82,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries();
   }, [queryClient]);
 
+  const forgotPassword = React.useCallback(async (email: string) => {
+    await ensureCsrfCookie();
+    await api.post("/api/forgot-password", { email });
+  }, []);
+
+  const resetPassword = React.useCallback(
+    async (input: {
+      token: string;
+      email: string;
+      password: string;
+      password_confirmation: string;
+    }) => {
+      await ensureCsrfCookie();
+      await api.post("/api/reset-password", input);
+    },
+    [],
+  );
+
   const value = React.useMemo(
-    () => ({ user, isLoading, login, register, logout }),
-    [user, isLoading, login, register, logout],
+    () => ({ user, isLoading, login, register, logout, forgotPassword, resetPassword }),
+    [user, isLoading, login, register, logout, forgotPassword, resetPassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
