@@ -80,7 +80,7 @@ class KakeiboDemoSeeder extends Seeder
             'name' => '家賃',
             'amount' => 68000,
             'day_of_month' => 27,
-            'next_date' => $this->nextOccurrence(27),
+            'next_date' => RecurringRule::calculateNextDate(27),
         ]);
         RecurringRule::query()->create([
             'user_id' => $user->id,
@@ -88,7 +88,7 @@ class KakeiboDemoSeeder extends Seeder
             'name' => 'Netflix',
             'amount' => 1980,
             'day_of_month' => 5,
-            'next_date' => $this->nextOccurrence(5),
+            'next_date' => RecurringRule::calculateNextDate(5),
         ]);
 
         // 今月の月次プラン（手取り-固定費-貯金目標）
@@ -128,17 +128,5 @@ class KakeiboDemoSeeder extends Seeder
             'account_id' => $otherAccount->id,
             'category_id' => $otherCategory->id,
         ]);
-    }
-
-    private function nextOccurrence(int $dayOfMonth): string
-    {
-        $today = CarbonImmutable::now();
-        $candidate = $today->day($dayOfMonth);
-
-        if ($candidate->lessThan($today)) {
-            $candidate = $candidate->addMonthNoOverflow();
-        }
-
-        return $candidate->toDateString();
     }
 }

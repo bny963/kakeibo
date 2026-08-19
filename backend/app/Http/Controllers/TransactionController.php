@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TransactionIndexRequest;
 use App\Http\Requests\TransactionRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionController extends Controller
 {
@@ -15,18 +17,45 @@ class TransactionController extends Controller
      */
     public function index(TransactionIndexRequest $request): JsonResponse
     {
-        $filters = $request->validated();
-
-        $query = $request->user()->transactions()
-            ->with(['account', 'category'])
-            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('date', '>=', $from))
-            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('date', '<=', $to))
-            ->when($filters['category_id'] ?? null, fn ($q, $categoryId) => $q->where('category_id', $categoryId))
-            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
-            ->orderByDesc('date')
-            ->orderByDesc('id');
+        $query = $this->filteredQuery($request)->orderByDesc('date')->orderByDesc('id');
 
         return response()->json($query->paginate(20));
+    }
+
+    /**
+     * 期間・カテゴリを指定してCSVファイルをダウンロードできる（FN029 / テストケース一覧 No.9）。
+     * indexと同じフィルター（日付範囲・カテゴリ・種別）を再利用する。
+     */
+    public function export(TransactionIndexRequest $request): StreamedResponse
+    {
+        $transactions = $this->filteredQuery($request)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        $filename = 'transactions_'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload(function () use ($transactions) {
+            $handle = fopen('php://output', 'w');
+            // Excelでの文字化けを防ぐためUTF-8 BOMを付与
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['日付', '種別', 'カテゴリ', '口座', '金額', 'メモ']);
+
+            foreach ($transactions as $transaction) {
+                fputcsv($handle, [
+                    $transaction->date->toDateString(),
+                    $transaction->type === 'income' ? '収入' : '支出',
+                    $transaction->category->name,
+                    $transaction->account->name,
+                    (int) $transaction->amount,
+                    $transaction->note,
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     /** 自分の取引として新規登録できる（権限設計 No.16）。account_id/category_idは自分の所有物のみ許可。 */
@@ -64,5 +93,17 @@ class TransactionController extends Controller
         $transaction->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function filteredQuery(TransactionIndexRequest $request): Builder
+    {
+        $filters = $request->validated();
+
+        return $request->user()->transactions()
+            ->with(['account', 'category'])
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('date', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('date', '<=', $to))
+            ->when($filters['category_id'] ?? null, fn ($q, $categoryId) => $q->where('category_id', $categoryId))
+            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type));
     }
 }
