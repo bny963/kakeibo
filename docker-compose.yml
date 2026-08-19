@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: kakeibo
+      MYSQL_USER: kakeibo
+      MYSQL_PASSWORD: kakeibo
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - kakeibo-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: kakeibo
+      DB_USERNAME: kakeibo
+      DB_PASSWORD: kakeibo
+      SESSION_DRIVER: cookie
+      SANCTUM_STATEFUL_DOMAINS: localhost:5173,127.0.0.1:5173
+      FRONTEND_URL: http://localhost:5173
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  kakeibo-db-data:

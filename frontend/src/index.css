@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/*
+ * Kakeibo design tokens
+ * 配色ポリシー: 赤字・警告色の多用を避け、達成・貯蓄はグリーン/ゴールド系、
+ * 警告は控えめなアンバーに限定する。ダークモードは非対応（ライトモード固定）。
+ */
+@theme {
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Brand / primary (neutral-positive teal, not associated with loss or gain) */
+  --color-brand-50: #eefcf6;
+  --color-brand-100: #d5f5e6;
+  --color-brand-200: #aeead0;
+  --color-brand-300: #7ad9b6;
+  --color-brand-400: #46c199;
+  --color-brand-500: #22a67e;
+  --color-brand-600: #158567;
+  --color-brand-700: #126a54;
+  --color-brand-800: #115445;
+  --color-brand-900: #0f4539;
+
+  /* Achievement / savings — green + gold, used for the piggy bank & positive results */
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f5a521;
+  --color-gold-600: #d98a0f;
+  --color-gold-700: #b56e0d;
+
+  /* Caution — amber only, never red. Used for over-budget / reminders. */
+  --color-caution-50: #fffaf0;
+  --color-caution-100: #feecc8;
+  --color-caution-200: #fdd88f;
+  --color-caution-300: #fbbf5c;
+  --color-caution-400: #f3a637;
+  --color-caution-500: #e08a1e;
+  --color-caution-600: #b96c14;
+
+  /* Neutral notice — used for gentle reminders (upcoming bills), not warnings */
+  --color-notice-50: #f7f7f8;
+  --color-notice-100: #eeeef0;
+  --color-notice-200: #dcdce1;
+  --color-notice-300: #b9b9c3;
+  --color-notice-400: #8f8f9c;
+  --color-notice-500: #6b6b78;
+
+  --color-ink-900: #1c1b1f;
+  --color-ink-700: #46454c;
+  --color-ink-500: #6f6d78;
+  --color-ink-300: #c8c7cf;
+  --color-ink-100: #f1f0f3;
+  --color-ink-50: #f8f8fa;
+
+  --radius-card: 1rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-ink-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
