@@ -53,8 +53,8 @@ class SummaryController extends Controller
         $type = $request->validated('type') ?: 'expense';
 
         $rows = Transaction::query()
-            ->where('user_id', $request->user()->id)
-            ->where('type', $type)
+            ->where('transactions.user_id', $request->user()->id)
+            ->where('transactions.type', $type)
             ->forMonth($month)
             ->join('categories', 'categories.id', '=', 'transactions.category_id')
             ->selectRaw('categories.id as category_id, categories.name, categories.color, categories.icon, SUM(transactions.amount) as total')

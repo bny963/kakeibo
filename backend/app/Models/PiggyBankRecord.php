@@ -20,7 +20,7 @@ class PiggyBankRecord extends Model
     protected function casts(): array
     {
         return [
-            'week_start_date' => 'date',
+            'week_start_date' => 'date:Y-m-d',
             'weekly_allowance' => 'decimal:2',
             'spent_amount' => 'decimal:2',
             'saved_amount' => 'decimal:2',

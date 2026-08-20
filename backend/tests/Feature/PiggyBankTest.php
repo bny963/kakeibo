@@ -60,7 +60,8 @@ class PiggyBankTest extends TestCase
         $response = $this->actingAs($user)->getJson('/api/piggy-bank/this-week');
 
         $response->assertOk();
-        $this->assertSame(5000.0, $response->json('spent_amount'));
+        // JSONは整数値の浮動小数を5000のように出力するため、assertEqualsで数値比較する
+        $this->assertEquals(5000.0, $response->json('spent_amount'));
         $this->assertGreaterThan(0, $response->json('saved_amount'));
         $this->assertFalse($response->json('is_over_budget'));
     }
@@ -85,7 +86,7 @@ class PiggyBankTest extends TestCase
         $response = $this->actingAs($user)->getJson('/api/piggy-bank/this-week');
 
         $response->assertOk();
-        $this->assertSame(0.0, $response->json('saved_amount'));
+        $this->assertEquals(0.0, $response->json('saved_amount'));
         $this->assertTrue($response->json('is_over_budget'));
     }
 }

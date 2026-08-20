@@ -25,7 +25,9 @@ class Transaction extends Model
     {
         return [
             'amount' => 'decimal:2',
-            'date' => 'date',
+            // 'date'のみだとJSONシリアライズ時にフルISO日時(2026-08-19T15:00:00.000000Z)になり、
+            // <input type="date">やCSV出力とフォーマットが噛み合わない。日付のみを返す。
+            'date' => 'date:Y-m-d',
             'is_recurring' => 'boolean',
         ];
     }

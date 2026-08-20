@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sanctum SPA(Cookie)認証: config/sanctum.php の stateful ドメインからの
         // リクエストにEnsureFrontendRequestsAreStatefulミドルウェアを適用する
         $middleware->statefulApi();
+
+        // Laravelはデフォルトで未認証ゲストを route('login') へリダイレクトしようとするが、
+        // 本アプリはAPI専用でwebのlogin名前付きルートを持たない（ログイン画面はReact SPA側）。
+        // 素のcurlなど Accept: application/json を送らないクライアントからのリクエストで
+        // RouteNotFoundExceptionが発生してしまうため、リダイレクト自体を無効化する。
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // 例外設計シートの方針をAPI向けに一元的に適用する。

@@ -11,11 +11,12 @@ class TransactionFactory extends Factory
 {
     public function definition(): array
     {
-        $type = fake()->randomElement(['income', 'expense']);
-
         return [
-            'type' => $type,
-            'amount' => $type === 'income'
+            'type' => fake()->randomElement(['income', 'expense']),
+            // 'amount'はクロージャにして、create(['type' => ...])で上書きされた後の
+            // 最終的なtype値を見て金額レンジを決める（呼び出し側でtypeを上書きしても
+            // 内部でランダムに決めた別のtypeを元に金額が算出されてしまう不整合を防ぐ）
+            'amount' => fn (array $attributes) => $attributes['type'] === 'income'
                 ? fake()->randomFloat(0, 30000, 300000)
                 : fake()->randomFloat(0, 300, 15000),
             'date' => fake()->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),

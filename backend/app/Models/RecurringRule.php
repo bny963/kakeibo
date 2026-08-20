@@ -24,7 +24,7 @@ class RecurringRule extends Model
         return [
             'amount' => 'decimal:2',
             'day_of_month' => 'integer',
-            'next_date' => 'date',
+            'next_date' => 'date:Y-m-d',
         ];
     }
 

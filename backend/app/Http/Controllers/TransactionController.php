@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TransactionIndexRequest;
 use App\Http\Requests\TransactionRequest;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -95,7 +95,7 @@ class TransactionController extends Controller
         return response()->json(null, 204);
     }
 
-    private function filteredQuery(TransactionIndexRequest $request): Builder
+    private function filteredQuery(TransactionIndexRequest $request): HasMany
     {
         $filters = $request->validated();
 
