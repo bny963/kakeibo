@@ -151,7 +151,11 @@ docker compose exec backend php artisan migrate
 docker compose exec backend php artisan db:seed   # ダミーデータ投入（任意）
 ```
 
-API は `http://localhost:8000` で待ち受けます。
+API は `http://localhost:8000` で待ち受けます。`db:seed` 実行後は以下のデモアカウントでログインできます。
+
+| メールアドレス | パスワード |
+|---|---|
+| demo@kakeibo.test | password |
 
 ### 2. フロントエンド
 

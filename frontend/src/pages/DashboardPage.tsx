@@ -11,7 +11,7 @@ import { StatTile } from "@/components/StatTile";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
-import { formatYen } from "@/lib/utils";
+import { buildExpenseResultMessage } from "@/lib/piggyBankMessages";
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
@@ -34,18 +34,7 @@ export default function DashboardPage() {
       queryFn: async () => (await api.get<PiggyBankWeekStatus>("/api/piggy-bank/this-week")).data,
     });
 
-    if (fresh.is_over_budget) {
-      toast({
-        title: "今週は少し使いすぎたかも",
-        description: "来週リセットしてまた頑張りましょう。",
-        variant: "caution",
-      });
-    } else {
-      toast({
-        title: `今週はあと${formatYen(fresh.saved_amount)}貯金箱に貯まりました！`,
-        variant: "success",
-      });
-    }
+    toast(buildExpenseResultMessage(fresh));
   }
 
   return (
