@@ -27,6 +27,12 @@ interface AuthContextValue {
     password: string;
     password_confirmation: string;
   }) => Promise<void>;
+  updateProfile: (input: {
+    name: string;
+    current_password?: string;
+    password?: string;
+    password_confirmation?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -100,9 +106,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const updateProfile = React.useCallback(
+    async (input: {
+      name: string;
+      current_password?: string;
+      password?: string;
+      password_confirmation?: string;
+    }) => {
+      const { data } = await api.put<AuthUser>("/api/user", input);
+      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, data);
+    },
+    [queryClient],
+  );
+
   const value = React.useMemo(
-    () => ({ user, isLoading, login, register, logout, forgotPassword, resetPassword }),
-    [user, isLoading, login, register, logout, forgotPassword, resetPassword],
+    () => ({
+      user,
+      isLoading,
+      login,
+      register,
+      logout,
+      forgotPassword,
+      resetPassword,
+      updateProfile,
+    }),
+    [user, isLoading, login, register, logout, forgotPassword, resetPassword, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

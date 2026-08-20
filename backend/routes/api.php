@@ -22,6 +22,8 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [UserController::class, 'show']);
+    // PG11（プロフィール設定）用。基本設計書のRoute一覧には明記がないが画面要件から追加。
+    Route::put('/user', [UserController::class, 'update']);
 
     Route::get('/accounts', [AccountController::class, 'index']);
     Route::post('/accounts', [AccountController::class, 'store']);
