@@ -22,9 +22,11 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-base font-semibold text-ink-900", className)} {...props} />
+    // ページ本文の見出しはh1から始まるため、カード見出しはh2として階層を維持する
+    // （開発プロセスのコード品質チェック: 見出しタグの階層構造）
+    <h2 ref={ref} className={cn("text-base font-semibold text-ink-900", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";
