@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\DuplicateBudgetException;
 use App\Http\Requests\BudgetIndexRequest;
 use App\Http\Requests\BudgetRequest;
 use App\Models\Transaction;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -56,18 +58,29 @@ class BudgetController extends Controller
 
     /**
      * カテゴリ・月を指定して予算金額を登録（既存があれば更新 = upsert）（権限設計 No.27）。
+     * updateOrCreateのSELECTとINSERTの間で同時リクエストが競合すると、DB側のユニーク制約
+     * （budgets(user_id,category_id,month)）違反のQueryExceptionが発生しうるため、
+     * DuplicateBudgetExceptionに変換して中立的な文言で返す（例外設計 No.5）。
      */
     public function store(BudgetRequest $request): JsonResponse
     {
-        $budget = $request->user()->budgets()->updateOrCreate(
-            [
-                'category_id' => $request->validated('category_id'),
-                'month' => $request->validated('month'),
-            ],
-            [
-                'amount' => $request->validated('amount'),
-            ],
-        );
+        try {
+            $budget = $request->user()->budgets()->updateOrCreate(
+                [
+                    'category_id' => $request->validated('category_id'),
+                    'month' => $request->validated('month'),
+                ],
+                [
+                    'amount' => $request->validated('amount'),
+                ],
+            );
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                throw new DuplicateBudgetException();
+            }
+
+            throw $e;
+        }
 
         return response()->json($budget->load('category'), 201);
     }

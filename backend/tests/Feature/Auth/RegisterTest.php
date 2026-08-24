@@ -62,7 +62,7 @@ class RegisterTest extends TestCase
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors('email');
-        $this->assertSame('このメールアドレスはすでに登録されています', $response->json('errors.email.0'));
+        $this->assertSame('このメールアドレスは既に登録されています。ログインをお試しください', $response->json('errors.email.0'));
     }
 
     public function test_successful_registration_logs_the_user_in(): void

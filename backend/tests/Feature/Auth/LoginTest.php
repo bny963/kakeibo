@@ -35,7 +35,7 @@ class LoginTest extends TestCase
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors('email');
-        $this->assertSame('ログイン情報が登録されていません', $response->json('errors.email.0'));
+        $this->assertSame('メールアドレスまたはパスワードが正しくありません', $response->json('errors.email.0'));
     }
 
     public function test_correct_credentials_log_the_user_in(): void

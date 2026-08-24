@@ -41,7 +41,7 @@ class AuthController extends Controller
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
-                'email' => ['ログイン情報が登録されていません'],
+                'email' => ['メールアドレスまたはパスワードが正しくありません'],
             ]);
         }
 
