@@ -21,8 +21,7 @@ class UpdateOverdueRecurringRulesTest extends TestCase
         $user = User::factory()->create();
         $category = Category::factory()->for($user)->expense()->create(['name' => '家賃']);
 
-        $rule = RecurringRule::query()->create([
-            'user_id' => $user->id,
+        $rule = $user->recurringRules()->create([
             'category_id' => $category->id,
             'name' => '家賃',
             'amount' => 80000,
@@ -46,8 +45,7 @@ class UpdateOverdueRecurringRulesTest extends TestCase
 
         $futureDate = now()->addDays(10)->startOfDay();
 
-        $rule = RecurringRule::query()->create([
-            'user_id' => $user->id,
+        $rule = $user->recurringRules()->create([
             'category_id' => $category->id,
             'name' => 'Netflix',
             'amount' => 1980,
