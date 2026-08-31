@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { buildExpenseResultMessage } from "@/lib/piggyBankMessages";
-
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+import { currentLocalMonth as currentMonth } from "@/lib/utils";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();

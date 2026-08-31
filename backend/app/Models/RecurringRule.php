@@ -46,12 +46,18 @@ class RecurringRule extends Model
     public static function calculateNextDate(int $dayOfMonth, ?CarbonImmutable $from = null): CarbonImmutable
     {
         $today = ($from ?? CarbonImmutable::now())->startOfDay();
-        $candidate = $today->day($dayOfMonth);
+        $candidate = self::clampToDayOfMonth($today, $dayOfMonth);
 
         if ($candidate->lessThan($today)) {
-            $candidate = $candidate->addMonthNoOverflow();
+            $candidate = self::clampToDayOfMonth($today->addMonthNoOverflow(), $dayOfMonth);
         }
 
         return $candidate;
+    }
+
+    /** 指定日がその月に存在しない場合（例: 2月31日）は月末日に丸める。 */
+    private static function clampToDayOfMonth(CarbonImmutable $month, int $dayOfMonth): CarbonImmutable
+    {
+        return $month->day(min($dayOfMonth, $month->daysInMonth));
     }
 }

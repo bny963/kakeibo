@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { useCategorySummary, useMonthlySummary } from "@/features/summary/api";
 import { getCategoryColor } from "@/lib/chartPalette";
-import { formatYen } from "@/lib/utils";
+import { currentLocalMonth as currentMonth, formatYen } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // 収入/収支の2系列は「識別」の役割なので固定順のカテゴリカル配色を使う
@@ -24,8 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const INCOME_COLOR = getCategoryColor(0); // blue
 const EXPENSE_COLOR = getCategoryColor(1); // orange
 const GRID_COLOR = "#e1e0d9";
-
-const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function ReportsPage() {
   const month = currentMonth();

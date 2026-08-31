@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { formatYen } from "@/lib/utils";
+import { currentLocalMonth as currentMonth, formatYen } from "@/lib/utils";
 import type { Budget } from "@/types/api";
-
-const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 // 状態遷移設計③: 順調(green) / まもなく到達・超過(amber)。赤字は使用しない。
 const STATUS_BADGE: Record<Budget["status"], { label: string; variant: "success" | "caution" }> = {

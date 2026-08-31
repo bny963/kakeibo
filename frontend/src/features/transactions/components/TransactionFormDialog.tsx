@@ -7,6 +7,7 @@ import {
   type TransactionInput,
 } from "@/features/transactions/api";
 import { getFieldErrors } from "@/lib/api";
+import { todayLocalDate as today } from "@/lib/utils";
 import type { Transaction, TransactionType } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,8 +35,6 @@ interface TransactionFormDialogProps {
   /** 保存成功時に呼ばれる(ダッシュボードでの貯金箱通知などに利用) */
   onSaved?: (transaction: Transaction) => void;
 }
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 /**
  * 支出・収入の登録/編集モーダル（FN012-FN016）。

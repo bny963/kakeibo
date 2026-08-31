@@ -38,7 +38,8 @@ class BudgetController extends Controller
         $result = $budgets->map(function ($budget) use ($spentByCategory) {
             $spent = (float) ($spentByCategory[$budget->category_id] ?? 0);
             $amount = (float) $budget->amount;
-            $usageRate = $amount > 0 ? round(min($spent / $amount, 1) * 100, 1) : 0;
+            // 予算0円（支出しない想定のカテゴリ）は割り算できないため、支出があれば100%＝超過として扱う。
+            $usageRate = $amount > 0 ? round(min($spent / $amount, 1) * 100, 1) : ($spent > 0 ? 100.0 : 0.0);
 
             return [
                 ...$budget->toArray(),
@@ -46,7 +47,7 @@ class BudgetController extends Controller
                 'usage_rate' => $usageRate,
                 // 状態遷移設計③: 80%未満=順調(green) / 80%以上100%未満=まもなく到達(amber) / 100%以上=超過(amber)
                 'status' => match (true) {
-                    $spent >= $amount && $amount > 0 => 'over',
+                    $amount > 0 ? $spent >= $amount : $spent > 0 => 'over',
                     $usageRate >= 80 => 'near',
                     default => 'ok',
                 },
