@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Models\User;
+use Database\Factories\CategoryFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,11 @@ class AuthController extends Controller
             'name' => $request->string('name'),
             'email' => $request->string('email'),
             'password' => $request->string('password'), // hashedキャストにより自動でbcrypt化
+        ]);
+
+        $user->categories()->createMany([
+            ...collect(CategoryFactory::$expenseCategories)->map(fn (array $c) => [...$c, 'type' => 'expense']),
+            ...collect(CategoryFactory::$incomeCategories)->map(fn (array $c) => [...$c, 'type' => 'income']),
         ]);
 
         Auth::login($user);
