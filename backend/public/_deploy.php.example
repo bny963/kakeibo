@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * SSHが使えない環境（ロリポップの下位プラン等）向けの、一回限りのデプロイ用スクリプト。
+ *
+ * 使い方:
+ *   1. このファイルを `_deploy.php` としてコピーし、下の $token を openssl rand -hex 20 等で
+ *      生成したランダムな文字列に書き換える
+ *   2. `.env` をアップロード済みの状態で、このファイルを backend/public/ にアップロードする
+ *      （index.php と同じ階層）
+ *   3. ブラウザで https://api.example.com/_deploy.php?token=<上で設定した文字列> にアクセスする
+ *   4. 出力を確認したら、必ずこのファイル（_deploy.php）をサーバーから削除する
+ *      （置きっぱなしにすると誰でも migrate 等を再実行できてしまうため）
+ */
+
+$token = 'REPLACE_WITH_RANDOM_STRING'; // 必ずランダムな文字列に書き換える
+
+if ($token === '' || strlen($token) < 20 || ($_GET['token'] ?? '') !== $token) {
+    http_response_code(403);
+    exit('forbidden');
+}
+
+require __DIR__.'/../vendor/autoload.php';
+
+$app = require_once __DIR__.'/../bootstrap/app.php';
+/** @var \Illuminate\Contracts\Console\Kernel $kernel */
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+header('Content-Type: text/plain; charset=utf-8');
+
+function run(\Illuminate\Contracts\Console\Kernel $kernel, string $command, array $params = []): void
+{
+    echo "\$ php artisan {$command}\n";
+    $exitCode = $kernel->call($command, $params);
+    echo $kernel->output();
+    echo "(exit code: {$exitCode})\n\n";
+}
+
+run($kernel, 'key:generate', ['--force' => true]);
+run($kernel, 'migrate', ['--force' => true]);
+run($kernel, 'storage:link');
+run($kernel, 'config:cache');
+run($kernel, 'route:cache');
+run($kernel, 'view:cache');
+
+echo "完了しました。このファイル(_deploy.php)を必ずサーバーから削除してください。\n";

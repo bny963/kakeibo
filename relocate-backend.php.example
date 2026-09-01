@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * web直下(公開フォルダ)に置かれてしまった kakeibo フォルダを、
+ * 公開フォルダの外(1つ上、アカウントのルート)へ移動する一回限りのスクリプト。
+ *
+ * 使い方:
+ *   1. このファイルを `_relocate.php` としてコピーし、下の $token を書き換える
+ *   2. web フォルダの直下(index.htmlなどと同じ階層)にアップロードする
+ *   3. ブラウザで ?token=<トークン> にアクセスする(まず何もせず現在地と中身を表示する)
+ *   4. 表示された内容を確認してから ?token=<トークン>&confirm=1 にアクセスすると実際に移動する
+ *   5. 完了したら、このファイル自身とweb/.htaccess.bak(あれば)の後片付けをする
+ */
+
+$token = 'REPLACE_WITH_RANDOM_STRING';
+
+if ($token === '' || strlen($token) < 20 || ($_GET['token'] ?? '') !== $token) {
+    http_response_code(403);
+    exit('forbidden');
+}
+
+header('Content-Type: text/plain; charset=utf-8');
+
+$here = __DIR__; // これが web (公開フォルダ) のはず
+$outside = dirname($here); // これがアカウントのルート(公開フォルダの外)のはず
+
+echo "このスクリプトの場所(__DIR__ = 公開フォルダのはず): {$here}\n";
+echo "移動先候補(1つ上 = 公開フォルダの外のはず): {$outside}\n\n";
+
+echo "=== 現在の {$here} の中身 ===\n";
+foreach (scandir($here) as $item) {
+    if ($item === '.' || $item === '..') {
+        continue;
+    }
+    echo (is_dir($here.'/'.$item) ? '[DIR] ' : '      ').$item."\n";
+}
+
+echo "\n=== 現在の {$outside} の中身 ===\n";
+foreach (scandir($outside) as $item) {
+    if ($item === '.' || $item === '..') {
+        continue;
+    }
+    echo (is_dir($outside.'/'.$item) ? '[DIR] ' : '      ').$item."\n";
+}
+
+if (($_GET['confirm'] ?? '') !== '1') {
+    echo "\n上記を確認し、問題なければ ?token=...&confirm=1 でアクセスして実際に移動してください。\n";
+    exit;
+}
+
+if (! is_dir($here.'/kakeibo')) {
+    echo "\n{$here}/kakeibo が見つからないので、何もしませんでした。\n";
+    exit;
+}
+
+if (is_dir($outside.'/kakeibo')) {
+    echo "\n{$outside}/kakeibo がすでに存在します。上書きしないので、手動で確認してください。\n";
+    exit;
+}
+
+echo "\n=== 移動実行 ===\n";
+if (@rename($here.'/kakeibo', $outside.'/kakeibo')) {
+    echo "移動しました: {$here}/kakeibo -> {$outside}/kakeibo\n";
+} else {
+    echo "renameに失敗しました。手動でのFTP移動が必要です。\n";
+    exit;
+}
+
+echo "\n完了です。".__DIR__."/".basename(__FILE__)." を削除してください。\n";

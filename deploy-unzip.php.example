@@ -1,0 +1,207 @@
+<?php
+
+/**
+ * SSHが使えない環境（ロリポップの下位プラン等）向けの、一回限りのZIP展開・後片付けスクリプト。
+ *
+ * 使い方:
+ *   1. このファイルを `_unzip.php` としてコピーし、下の $token をランダムな文字列に書き換える
+ *   2. kakeibo963.online の公開フォルダ直下にアップロードする
+ *   3. backend-upload.zip / frontend-dist-upload.zip も同じ場所にアップロードする
+ *   4. ブラウザで ?job=backend → ?job=frontend の順にアクセスする
+ *   5. 最後に ?job=fixup にアクセスすると、
+ *        - 展開されたバックエンド一式(kakeibo/backend)を公開フォルダの外(1つ上)へ移動
+ *        - フロントエンドのzipを公開フォルダ直下へ展開
+ *        - 使い終わった zip / このスクリプト自身を自動削除
+ *      までまとめて行う
+ */
+
+$token = 'REPLACE_WITH_RANDOM_STRING'; // 必ずランダムな文字列に書き換える
+
+if ($token === '' || strlen($token) < 20 || ($_GET['token'] ?? '') !== $token) {
+    http_response_code(403);
+    exit('forbidden');
+}
+
+header('Content-Type: text/plain; charset=utf-8');
+
+if (! class_exists('ZipArchive')) {
+    exit('ZipArchive が利用できません。ロリポップのサポートに zip 拡張の有効化を確認してください。');
+}
+
+echo 'このスクリプトの実際の場所(__DIR__): '.__DIR__."\n\n";
+
+// このスクリプトが置かれているフォルダを起点に探す(＝ここが実質の作業フォルダ)
+$here = __DIR__;
+
+function find_file(string $dir, string $filename): ?string
+{
+    $path = $dir.'/'.$filename;
+
+    return file_exists($path) ? $path : null;
+}
+
+function extract_zip(string $zipPath, string $destDir): bool
+{
+    if (! is_dir($destDir) && ! mkdir($destDir, 0755, true) && ! is_dir($destDir)) {
+        echo "展開先フォルダを作成できません: {$destDir}\n";
+
+        return false;
+    }
+
+    $zip = new ZipArchive;
+    if ($zip->open($zipPath) !== true) {
+        echo "zipを開けません: {$zipPath}\n";
+
+        return false;
+    }
+
+    $zip->extractTo($destDir);
+    $count = $zip->numFiles;
+    $zip->close();
+
+    echo "展開しました: {$zipPath} -> {$destDir}（{$count}件）\n";
+
+    return true;
+}
+
+function move_recursive(string $src, string $dest): bool
+{
+    if (! is_dir($src)) {
+        echo "移動元が見つかりません: {$src}\n";
+
+        return false;
+    }
+
+    if (@rename($src, $dest)) {
+        echo "移動しました: {$src} -> {$dest}\n";
+
+        return true;
+    }
+
+    // 異なるファイルシステム越し等で rename が失敗する場合のフォールバック
+    if (! is_dir($dest) && ! mkdir($dest, 0755, true)) {
+        echo "移動先フォルダを作成できません: {$dest}\n";
+
+        return false;
+    }
+
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($it as $item) {
+        $target = $dest.DIRECTORY_SEPARATOR.$it->getSubPathName();
+        if ($item->isDir()) {
+            if (! is_dir($target)) {
+                mkdir($target, 0755, true);
+            }
+        } else {
+            copy($item->getPathname(), $target);
+        }
+    }
+
+    remove_recursive($src);
+    echo "コピーで移動しました: {$src} -> {$dest}\n";
+
+    return true;
+}
+
+function remove_recursive(string $dir): void
+{
+    if (! is_dir($dir)) {
+        if (is_file($dir)) {
+            @unlink($dir);
+        }
+
+        return;
+    }
+
+    $items = scandir($dir);
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        $path = $dir.DIRECTORY_SEPARATOR.$item;
+        if (is_dir($path)) {
+            remove_recursive($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    @rmdir($dir);
+}
+
+$job = $_GET['job'] ?? '';
+
+if ($job === 'backend') {
+    $zipPath = find_file($here, 'backend-upload.zip');
+    if ($zipPath === null) {
+        echo "backend-upload.zip が見つかりません: {$here}/backend-upload.zip\n";
+    } else {
+        extract_zip($zipPath, $here.'/kakeibo/backend');
+    }
+} elseif ($job === 'frontend') {
+    $zipPath = find_file($here, 'frontend-dist-upload.zip');
+    if ($zipPath === null) {
+        echo "frontend-dist-upload.zip が見つかりません: {$here}/frontend-dist-upload.zip\n";
+    } else {
+        // 一旦このフォルダの直下に展開する(fixupで公開フォルダ直下へ移動される)
+        extract_zip($zipPath, $here.'/_frontend_tmp');
+    }
+} elseif ($job === 'fixup') {
+    // 1つ上のフォルダ = 公開フォルダの外(本来置きたい場所)とみなす
+    $outside = dirname($here);
+
+    echo "=== kakeibo/backend を公開フォルダの外へ移動 ===\n";
+    if (is_dir($here.'/kakeibo')) {
+        move_recursive($here.'/kakeibo', $outside.'/kakeibo');
+    } else {
+        echo "{$here}/kakeibo が見つかりません(job=backend をまだ実行していないかも)\n";
+    }
+
+    echo "\n=== フロントエンドを公開フォルダ直下へ配置 ===\n";
+    if (is_dir($here.'/_frontend_tmp')) {
+        foreach (scandir($here.'/_frontend_tmp') as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $src = $here.'/_frontend_tmp/'.$item;
+            $dst = $outside.'/'.$item;
+            if (is_dir($src)) {
+                move_recursive($src, $dst);
+            } else {
+                rename($src, $dst) or copy($src, $dst);
+            }
+        }
+        remove_recursive($here.'/_frontend_tmp');
+    } else {
+        echo "{$here}/_frontend_tmp が見つかりません(job=frontend をまだ実行していないかも)\n";
+    }
+
+    echo "\n=== 後片付け ===\n";
+    foreach (['backend-upload.zip', 'frontend-dist-upload.zip'] as $f) {
+        if (file_exists($here.'/'.$f)) {
+            unlink($here.'/'.$f);
+            echo "削除: {$here}/{$f}\n";
+        }
+    }
+
+    // このフォルダ自体が本来不要な入れ子フォルダだった場合は、空になったら削除を試みる
+    $remaining = array_diff(scandir($here), ['.', '..', basename(__FILE__)]);
+    if (empty($remaining)) {
+        echo "\n{$here} は空になったので、このスクリプト自身も削除して終了します。\n";
+        register_shutdown_function(function () use ($here) {
+            @unlink(__FILE__);
+            @rmdir($here);
+        });
+    } else {
+        echo "\n{$here} にまだ残っているものがあります。手動で確認してください:\n";
+        foreach ($remaining as $r) {
+            echo "  {$r}\n";
+        }
+        echo "確認できたら、このファイル自身(".__FILE__.")も削除してください。\n";
+    }
+} else {
+    echo "?job=backend / ?job=frontend / ?job=fixup のいずれかを指定してください\n";
+}

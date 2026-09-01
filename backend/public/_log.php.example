@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * storage/logs/laravel.log の末尾を確認するための一回限りの診断スクリプト。
+ * 確認が終わったら必ず削除すること。
+ */
+
+$token = 'REPLACE_WITH_RANDOM_STRING';
+
+if ($token === '' || strlen($token) < 20 || ($_GET['token'] ?? '') !== $token) {
+    http_response_code(403);
+    exit('forbidden');
+}
+
+header('Content-Type: text/plain; charset=utf-8');
+
+$logPath = __DIR__.'/../storage/logs/laravel.log';
+
+if (! file_exists($logPath)) {
+    exit("ログファイルが見つかりません: {$logPath}\n");
+}
+
+$lines = (int) ($_GET['lines'] ?? 80);
+$content = file($logPath);
+$tail = array_slice($content, -$lines);
+
+echo implode('', $tail);
