@@ -3,9 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getErrorMessage, getFieldErrors } from "@/lib/api";
+import { normalizeFullWidthAscii } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -48,24 +50,25 @@ export default function LoginPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">メールアドレス</Label>
           <Input
             id="email"
             type="email"
+            required
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(normalizeFullWidthAscii(e.target.value))}
           />
           {fieldErrors.email && <p className="text-sm text-ink-400">{fieldErrors.email}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">パスワード</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
+            required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

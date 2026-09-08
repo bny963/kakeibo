@@ -5,8 +5,8 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { getErrorMessage, getFieldErrors } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPasswordPage() {
   const { resetPassword } = useAuth();
@@ -57,18 +57,18 @@ export default function ResetPasswordPage() {
         パスワードの再設定
       </h1>
 
-      {bannerError && (
+      {bannerError && !Object.keys(fieldErrors).length && (
         <div className="mb-4 rounded-lg bg-caution-50 px-4 py-3 text-sm text-caution-600">
           {bannerError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">新しいパスワード</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
+            required
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -78,9 +78,9 @@ export default function ResetPasswordPage() {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password_confirmation">確認用パスワード</Label>
-          <Input
+          <PasswordInput
             id="password_confirmation"
-            type="password"
+            required
             autoComplete="new-password"
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}

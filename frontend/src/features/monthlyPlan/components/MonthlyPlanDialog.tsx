@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useMonthlyPlan, useSaveMonthlyPlan } from "@/features/monthlyPlan/api";
-import { getFieldErrors } from "@/lib/api";
+import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
+import { normalizeIntegerInput } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +29,7 @@ interface MonthlyPlanDialogProps {
 export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDialogProps) {
   const { data: plan } = useMonthlyPlan(month);
   const saveMonthlyPlan = useSaveMonthlyPlan();
+  const { toast } = useToast();
 
   const [income, setIncome] = React.useState("");
   const [fixedCosts, setFixedCosts] = React.useState("");
@@ -48,13 +51,21 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
     try {
       await saveMonthlyPlan.mutateAsync({
         month,
-        income: Number(income),
-        fixed_costs: Number(fixedCosts),
-        savings_goal: Number(savingsGoal),
+        income: income ? Number(income) : (undefined as unknown as number),
+        fixed_costs: fixedCosts ? Number(fixedCosts) : (undefined as unknown as number),
+        savings_goal: savingsGoal ? Number(savingsGoal) : (undefined as unknown as number),
       });
       onOpenChange(false);
     } catch (error) {
-      setFieldErrors(getFieldErrors(error));
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      if (!isApiError(error) || error.response.status !== 422 || Object.keys(errors).length === 0) {
+        toast({
+          title: "保存できませんでした",
+          description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+          variant: "caution",
+        });
+      }
     }
   }
 
@@ -68,15 +79,16 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="plan-income">今月の手取り収入</Label>
             <Input
               id="plan-income"
-              type="number"
+              type="text"
               inputMode="numeric"
+              required
               value={income}
-              onChange={(e) => setIncome(e.target.value)}
+              onChange={(e) => setIncome(normalizeIntegerInput(e.target.value))}
             />
             {fieldErrors.income && <p className="text-sm text-ink-400">{fieldErrors.income}</p>}
           </div>
@@ -85,10 +97,11 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
             <Label htmlFor="plan-fixed-costs">固定費の合計</Label>
             <Input
               id="plan-fixed-costs"
-              type="number"
+              type="text"
               inputMode="numeric"
+              required
               value={fixedCosts}
-              onChange={(e) => setFixedCosts(e.target.value)}
+              onChange={(e) => setFixedCosts(normalizeIntegerInput(e.target.value))}
             />
             {fieldErrors.fixed_costs && (
               <p className="text-sm text-ink-400">{fieldErrors.fixed_costs}</p>
@@ -99,10 +112,11 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
             <Label htmlFor="plan-savings-goal">貯金目標額</Label>
             <Input
               id="plan-savings-goal"
-              type="number"
+              type="text"
               inputMode="numeric"
+              required
               value={savingsGoal}
-              onChange={(e) => setSavingsGoal(e.target.value)}
+              onChange={(e) => setSavingsGoal(normalizeIntegerInput(e.target.value))}
             />
             {fieldErrors.savings_goal && (
               <p className="text-sm text-ink-400">{fieldErrors.savings_goal}</p>

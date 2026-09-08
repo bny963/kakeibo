@@ -62,10 +62,20 @@ class SummaryController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        // SUM()はDBドライバによらず文字列で返るため、そのままJSON化するとフロントのPieChartが
+        // 数値として扱えず描画されない。明示的にfloatへキャストする。
+        $categories = $rows->map(fn ($row) => [
+            'category_id' => $row->category_id,
+            'name' => $row->name,
+            'color' => $row->color,
+            'icon' => $row->icon,
+            'total' => (float) $row->total,
+        ]);
+
         return response()->json([
             'month' => $month,
             'type' => $type,
-            'categories' => $rows,
+            'categories' => $categories,
         ]);
     }
 

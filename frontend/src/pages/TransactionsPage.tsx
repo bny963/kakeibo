@@ -29,6 +29,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatYen } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const ALL = "all";
 
@@ -37,19 +39,45 @@ export default function TransactionsPage() {
   const { data: categories = [] } = useCategories();
   const { data, isLoading } = useTransactions(filters);
   const deleteTransaction = useDeleteTransaction();
+  const { toast } = useToast();
 
   const [editing, setEditing] = React.useState<Transaction | null>(null);
   const [isFormOpen, setFormOpen] = React.useState(false);
   const [pendingDelete, setPendingDelete] = React.useState<Transaction | null>(null);
 
   function updateFilter<K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K]) {
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+    setFilters((prev) => {
+      const next: TransactionFilters = { ...prev, [key]: value, page: 1 };
+      // 種別を変更したら、新しい種別に存在しないカテゴリの絞り込みは解除する(種別とカテゴリの連動)
+      if (key === "type" && next.category_id) {
+        const category = categories.find((c) => c.id === next.category_id);
+        if (!category || category.type !== value) {
+          next.category_id = undefined;
+        }
+      }
+      return next;
+    });
   }
+
+  const categoriesForFilter = filters.type
+    ? categories.filter((c) => c.type === filters.type)
+    : categories;
+  const hasActiveFilters = Boolean(
+    filters.from || filters.to || filters.type || filters.category_id,
+  );
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
-    await deleteTransaction.mutateAsync(pendingDelete.id);
-    setPendingDelete(null);
+    try {
+      await deleteTransaction.mutateAsync(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (error) {
+      toast({
+        title: "削除できませんでした",
+        description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+        variant: "caution",
+      });
+    }
   }
 
   return (
@@ -125,7 +153,7 @@ export default function TransactionsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>すべて</SelectItem>
-                {categories.map((c) => (
+                {categoriesForFilter.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)}>
                     {c.name}
                   </SelectItem>
@@ -137,7 +165,7 @@ export default function TransactionsPage() {
       </Card>
 
       <Card className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-ink-100 text-left text-ink-500">
               <th className="px-4 py-3 font-medium">日付</th>
@@ -159,19 +187,19 @@ export default function TransactionsPage() {
             {!isLoading && data?.data.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-ink-400">
-                  取引がまだありません
+                  {hasActiveFilters ? "条件に一致する取引がありません" : "取引がまだありません"}
                 </td>
               </tr>
             )}
             {data?.data.map((transaction) => (
               <tr key={transaction.id} className="border-b border-ink-50 last:border-0">
-                <td className="px-4 py-3 text-ink-700">{transaction.date}</td>
-                <td className="px-4 py-3 text-ink-700">{transaction.category?.name}</td>
-                <td className="px-4 py-3 text-ink-500">{transaction.account?.name}</td>
-                <td className="px-4 py-3 text-ink-500">{transaction.note}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-ink-700">{transaction.date}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-ink-700">{transaction.category?.name}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-ink-500">{transaction.account?.name}</td>
+                <td className="max-w-[160px] truncate px-4 py-3 text-ink-500">{transaction.note}</td>
                 <td
                   className={
-                    "px-4 py-3 text-right font-medium " +
+                    "whitespace-nowrap px-4 py-3 text-right font-medium " +
                     (transaction.type === "income" ? "text-brand-600" : "text-ink-900")
                   }
                 >
@@ -182,7 +210,7 @@ export default function TransactionsPage() {
                   <div className="flex justify-end gap-1">
                     <button
                       aria-label="編集"
-                      className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                       onClick={() => {
                         setEditing(transaction);
                         setFormOpen(true);
@@ -192,7 +220,7 @@ export default function TransactionsPage() {
                     </button>
                     <button
                       aria-label="削除"
-                      className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                       onClick={() => setPendingDelete(transaction)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -242,7 +270,7 @@ export default function TransactionsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>この取引を削除しますか？</DialogTitle>
-            <DialogDescription>この操作は取り消せません。本当に削除しますか？</DialogDescription>
+            <DialogDescription>この操作は取り消せません。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingDelete(null)}>

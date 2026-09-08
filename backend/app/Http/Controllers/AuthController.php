@@ -33,6 +33,14 @@ class AuthController extends Controller
             ...collect(CategoryFactory::$incomeCategories)->map(fn (array $c) => [...$c, 'type' => 'income']),
         ]);
 
+        // 口座が1件も無い状態だと取引登録画面の口座選択が空になり操作できないため、
+        // 現金口座を初期データとして1件作成しておく。
+        $user->accounts()->create([
+            'name' => '現金',
+            'type' => 'cash',
+            'balance' => 0,
+        ]);
+
         Auth::login($user);
         $request->session()->regenerate();
 

@@ -7,8 +7,9 @@ import {
   useUpdateAccount,
   type AccountInput,
 } from "@/features/accounts/api";
-import { getErrorMessage, getFieldErrors } from "@/lib/api";
-import { formatYen } from "@/lib/utils";
+import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
+import { formatYen, normalizeIntegerInput } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import type { Account, AccountType } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,6 +42,7 @@ export default function AccountsPage() {
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
   const deleteAccount = useDeleteAccount();
+  const { toast } = useToast();
 
   const [editing, setEditing] = React.useState<Account | null>(null);
   const [isFormOpen, setFormOpen] = React.useState(false);
@@ -73,7 +75,11 @@ export default function AccountsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFieldErrors({});
-    const input: AccountInput = { name, type, balance: Number(balance) };
+    const input: AccountInput = {
+      name,
+      type,
+      balance: balance ? Number(balance) : (undefined as unknown as number),
+    };
 
     try {
       if (editing) {
@@ -83,7 +89,15 @@ export default function AccountsPage() {
       }
       setFormOpen(false);
     } catch (error) {
-      setFieldErrors(getFieldErrors(error));
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      if (!isApiError(error) || error.response.status !== 422 || Object.keys(errors).length === 0) {
+        toast({
+          title: "保存できませんでした",
+          description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+          variant: "caution",
+        });
+      }
     }
   }
 
@@ -123,14 +137,14 @@ export default function AccountsPage() {
             <div className="flex gap-1">
               <button
                 aria-label="編集"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => openEdit(account)}
               >
                 <Pencil className="h-4 w-4" />
               </button>
               <button
                 aria-label="削除"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => {
                   setDeleteError(null);
                   setPendingDelete(account);
@@ -148,10 +162,10 @@ export default function AccountsPage() {
           <DialogHeader>
             <DialogTitle>{editing ? "口座を編集" : "口座を追加"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="account-name">口座名</Label>
-              <Input id="account-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="account-name" required value={name} onChange={(e) => setName(e.target.value)} />
               {fieldErrors.name && <p className="text-sm text-ink-400">{fieldErrors.name}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
@@ -171,10 +185,11 @@ export default function AccountsPage() {
               <Label htmlFor="account-balance">初期残高</Label>
               <Input
                 id="account-balance"
-                type="number"
+                type="text"
                 inputMode="numeric"
+                required
                 value={balance}
-                onChange={(e) => setBalance(e.target.value)}
+                onChange={(e) => setBalance(normalizeIntegerInput(e.target.value))}
               />
               {fieldErrors.balance && <p className="text-sm text-ink-400">{fieldErrors.balance}</p>}
             </div>
@@ -194,7 +209,7 @@ export default function AccountsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>この口座を削除しますか？</DialogTitle>
-            <DialogDescription>この操作は取り消せません。本当に削除しますか？</DialogDescription>
+            <DialogDescription>この操作は取り消せません。</DialogDescription>
           </DialogHeader>
           {deleteError && <p className="text-sm text-caution-600">{deleteError}</p>}
           <DialogFooter>

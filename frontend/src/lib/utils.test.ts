@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cn, formatYen } from "@/lib/utils";
+import { cn, formatYen, normalizeFullWidthAscii, normalizeIntegerInput } from "@/lib/utils";
 
 describe("formatYen", () => {
   it("formats a positive amount with a 円 suffix and thousands separators", () => {
@@ -22,5 +22,29 @@ describe("cn", () => {
 
   it("drops falsy values", () => {
     expect(cn("a", false, undefined, "b")).toBe("a b");
+  });
+});
+
+describe("normalizeIntegerInput", () => {
+  it("converts full-width digits to half-width", () => {
+    expect(normalizeIntegerInput("１２３４")).toBe("1234");
+  });
+
+  it("strips non-digit characters, including decimal points", () => {
+    expect(normalizeIntegerInput("1,234.56円")).toBe("123456");
+  });
+
+  it("returns an empty string when nothing numeric was entered", () => {
+    expect(normalizeIntegerInput("abc")).toBe("");
+  });
+});
+
+describe("normalizeFullWidthAscii", () => {
+  it("converts a full-width email address to half-width", () => {
+    expect(normalizeFullWidthAscii("ｕｓｅｒ＠ｅｘａｍｐｌｅ．ｃｏｍ")).toBe("user@example.com");
+  });
+
+  it("leaves an already half-width string unchanged", () => {
+    expect(normalizeFullWidthAscii("user@example.com")).toBe("user@example.com");
   });
 });

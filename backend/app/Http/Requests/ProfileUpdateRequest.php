@@ -35,6 +35,7 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name.required' => 'お名前を入力してください',
+            'name.max' => 'お名前は100文字以内で入力してください',
             'current_password.required_with' => '現在のパスワードを入力してください',
             'current_password.current_password' => '現在のパスワードが正しくありません',
             'password.min' => 'パスワードは8文字以上で入力してください',

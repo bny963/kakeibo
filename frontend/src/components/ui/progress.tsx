@@ -12,18 +12,24 @@ export interface ProgressProps
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, indicatorClassName, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn("relative h-2 w-full overflow-hidden rounded-full bg-ink-100", className)}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className={cn("h-full flex-1 bg-brand-500 transition-all", indicatorClassName)}
-      style={{ transform: `translateX(-${100 - (value ?? 0)}%)` }}
-    />
-  </ProgressPrimitive.Root>
-));
+>(({ className, value, indicatorClassName, ...props }, ref) => {
+  // 予算超過時は使用率が100%を超えるため、バーの見た目・Radixへ渡す値ともに100%でクランプする
+  const clampedValue = Math.min(value ?? 0, 100);
+
+  return (
+    <ProgressPrimitive.Root
+      ref={ref}
+      value={clampedValue}
+      className={cn("relative h-2 w-full overflow-hidden rounded-full bg-ink-100", className)}
+      {...props}
+    >
+      <ProgressPrimitive.Indicator
+        className={cn("h-full flex-1 bg-brand-500 transition-all", indicatorClassName)}
+        style={{ transform: `translateX(-${100 - clampedValue}%)` }}
+      />
+    </ProgressPrimitive.Root>
+  );
+});
 Progress.displayName = ProgressPrimitive.Root.displayName;
 
 export { Progress };

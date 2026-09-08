@@ -8,8 +8,9 @@ import {
   type RecurringRuleInput,
 } from "@/features/recurringRules/api";
 import { useCategories } from "@/features/categories/api";
-import { getFieldErrors } from "@/lib/api";
-import { formatYen } from "@/lib/utils";
+import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
+import { formatYen, normalizeIntegerInput } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import type { RecurringRule } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export default function RecurringRulesPage() {
   const createRule = useCreateRecurringRule();
   const updateRule = useUpdateRecurringRule();
   const deleteRule = useDeleteRecurringRule();
+  const { toast } = useToast();
 
   const [editing, setEditing] = React.useState<RecurringRule | null>(null);
   const [isFormOpen, setFormOpen] = React.useState(false);
@@ -76,9 +78,9 @@ export default function RecurringRulesPage() {
     setFieldErrors({});
     const input: RecurringRuleInput = {
       name,
-      category_id: Number(categoryId),
-      amount: Number(amount),
-      day_of_month: Number(dayOfMonth),
+      category_id: categoryId ? Number(categoryId) : (undefined as unknown as number),
+      amount: amount ? Number(amount) : (undefined as unknown as number),
+      day_of_month: dayOfMonth ? Number(dayOfMonth) : (undefined as unknown as number),
     };
 
     try {
@@ -89,14 +91,30 @@ export default function RecurringRulesPage() {
       }
       setFormOpen(false);
     } catch (error) {
-      setFieldErrors(getFieldErrors(error));
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      if (!isApiError(error) || error.response.status !== 422 || Object.keys(errors).length === 0) {
+        toast({
+          title: "保存できませんでした",
+          description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+          variant: "caution",
+        });
+      }
     }
   }
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
-    await deleteRule.mutateAsync(pendingDelete.id);
-    setPendingDelete(null);
+    try {
+      await deleteRule.mutateAsync(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (error) {
+      toast({
+        title: "削除できませんでした",
+        description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+        variant: "caution",
+      });
+    }
   }
 
   return (
@@ -132,14 +150,14 @@ export default function RecurringRulesPage() {
             <div className="flex gap-1">
               <button
                 aria-label="編集"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => openEdit(rule)}
               >
                 <Pencil className="h-4 w-4" />
               </button>
               <button
                 aria-label="削除"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => setPendingDelete(rule)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -154,10 +172,10 @@ export default function RecurringRulesPage() {
           <DialogHeader>
             <DialogTitle>{editing ? "固定費を編集" : "固定費を追加"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rule-name">名称（例：家賃、Netflix）</Label>
-              <Input id="rule-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="rule-name" required value={name} onChange={(e) => setName(e.target.value)} />
               {fieldErrors.name && <p className="text-sm text-ink-400">{fieldErrors.name}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
@@ -182,10 +200,11 @@ export default function RecurringRulesPage() {
               <Label htmlFor="rule-amount">金額</Label>
               <Input
                 id="rule-amount"
-                type="number"
+                type="text"
                 inputMode="numeric"
+                required
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(normalizeIntegerInput(e.target.value))}
               />
               {fieldErrors.amount && <p className="text-sm text-ink-400">{fieldErrors.amount}</p>}
             </div>
@@ -193,11 +212,11 @@ export default function RecurringRulesPage() {
               <Label htmlFor="rule-day">毎月の発生日（1〜31）</Label>
               <Input
                 id="rule-day"
-                type="number"
-                min={1}
-                max={31}
+                type="text"
+                inputMode="numeric"
+                required
                 value={dayOfMonth}
-                onChange={(e) => setDayOfMonth(e.target.value)}
+                onChange={(e) => setDayOfMonth(normalizeIntegerInput(e.target.value))}
               />
               {fieldErrors.day_of_month && (
                 <p className="text-sm text-ink-400">{fieldErrors.day_of_month}</p>
@@ -219,7 +238,7 @@ export default function RecurringRulesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>この固定費を削除しますか？</DialogTitle>
-            <DialogDescription>この操作は取り消せません。本当に削除しますか？</DialogDescription>
+            <DialogDescription>この操作は取り消せません。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingDelete(null)}>

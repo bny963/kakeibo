@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getErrorMessage, getFieldErrors } from "@/lib/api";
+import { normalizeFullWidthAscii } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -51,10 +53,16 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">お名前</Label>
-          <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input
+            id="name"
+            required
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
           {fieldErrors.name && <p className="text-sm text-ink-400">{fieldErrors.name}</p>}
         </div>
 
@@ -63,18 +71,19 @@ export default function RegisterPage() {
           <Input
             id="email"
             type="email"
+            required
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(normalizeFullWidthAscii(e.target.value))}
           />
           {fieldErrors.email && <p className="text-sm text-ink-400">{fieldErrors.email}</p>}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">パスワード</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
+            required
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -84,9 +93,9 @@ export default function RegisterPage() {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password_confirmation">確認用パスワード</Label>
-          <Input
+          <PasswordInput
             id="password_confirmation"
-            type="password"
+            required
             autoComplete="new-password"
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}
