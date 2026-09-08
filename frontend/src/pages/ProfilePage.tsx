@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
@@ -70,10 +71,10 @@ export default function ProfilePage() {
           <CardTitle>お名前</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleNameSubmit} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handleNameSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="profile-name">お名前</Label>
-              <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="profile-name" required value={name} onChange={(e) => setName(e.target.value)} />
               {nameError && <p className="text-sm text-ink-400">{nameError}</p>}
             </div>
             <Button type="submit" disabled={isSavingName} className="w-fit">
@@ -88,12 +89,12 @@ export default function ProfilePage() {
           <CardTitle>パスワード変更</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="current-password">現在のパスワード</Label>
-              <Input
+              <PasswordInput
                 id="current-password"
-                type="password"
+                required
                 autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -104,9 +105,9 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-password">新しいパスワード</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
+                required
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -117,9 +118,9 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-password-confirmation">確認用パスワード</Label>
-              <Input
+              <PasswordInput
                 id="new-password-confirmation"
-                type="password"
+                required
                 autoComplete="new-password"
                 value={passwordConfirmation}
                 onChange={(e) => setPasswordConfirmation(e.target.value)}

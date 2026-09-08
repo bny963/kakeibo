@@ -85,7 +85,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(async () => {
     await api.post("/api/logout");
     queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
-    await queryClient.invalidateQueries();
+    // refetchType: "none" にしないと、画面遷移が完了する前に取引一覧・集計などのクエリが
+    // 即座に再取得を試みてしまい、既に失効したセッションに対する401がコンソールエラーとして
+    // 出てしまう。ログアウト時はキャッシュを破棄するだけにとどめ、再取得は次にマウントされた
+    // タイミングに任せる。
+    await queryClient.invalidateQueries({ refetchType: "none" });
   }, [queryClient]);
 
   const forgotPassword = React.useCallback(async (email: string) => {

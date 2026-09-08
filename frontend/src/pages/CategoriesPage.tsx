@@ -7,7 +7,8 @@ import {
   useUpdateCategory,
   type CategoryInput,
 } from "@/features/categories/api";
-import { getErrorMessage, getFieldErrors } from "@/lib/api";
+import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import type { Category, CategoryType } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export default function CategoriesPage() {
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+  const { toast } = useToast();
 
   const [editing, setEditing] = React.useState<Category | null>(null);
   const [isFormOpen, setFormOpen] = React.useState(false);
@@ -79,7 +81,15 @@ export default function CategoriesPage() {
       }
       setFormOpen(false);
     } catch (error) {
-      setFieldErrors(getFieldErrors(error));
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      if (!isApiError(error) || error.response.status !== 422 || Object.keys(errors).length === 0) {
+        toast({
+          title: "保存できませんでした",
+          description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+          variant: "caution",
+        });
+      }
     }
   }
 
@@ -124,14 +134,14 @@ export default function CategoriesPage() {
             <div className="flex gap-1">
               <button
                 aria-label="編集"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => openEdit(category)}
               >
                 <Pencil className="h-4 w-4" />
               </button>
               <button
                 aria-label="削除"
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 onClick={() => {
                   setDeleteError(null);
                   setPendingDelete(category);
@@ -149,10 +159,10 @@ export default function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>{editing ? "カテゴリを編集" : "カテゴリを追加"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="category-name">カテゴリ名</Label>
-              <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="category-name" required value={name} onChange={(e) => setName(e.target.value)} />
               {fieldErrors.name && <p className="text-sm text-ink-400">{fieldErrors.name}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
@@ -197,7 +207,7 @@ export default function CategoriesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>このカテゴリを削除しますか？</DialogTitle>
-            <DialogDescription>この操作は取り消せません。本当に削除しますか？</DialogDescription>
+            <DialogDescription>この操作は取り消せません。</DialogDescription>
           </DialogHeader>
           {deleteError && <p className="text-sm text-caution-600">{deleteError}</p>}
           <DialogFooter>

@@ -1,12 +1,13 @@
 import * as React from "react";
 import { useBudgets, useSaveBudget } from "@/features/budgets/api";
 import { useCategories } from "@/features/categories/api";
+import { getErrorMessage } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { currentLocalMonth as currentMonth, formatYen } from "@/lib/utils";
+import { currentLocalMonth as currentMonth, formatYen, normalizeIntegerInput } from "@/lib/utils";
 import type { Budget } from "@/types/api";
 
 // 状態遷移設計③: 順調(green) / まもなく到達・超過(amber)。赤字は使用しない。
@@ -71,16 +72,25 @@ function BudgetRow({
   budget?: Budget;
   onSave: (amount: number) => Promise<unknown>;
 }) {
-  const [amount, setAmount] = React.useState(
-    budget ? String(Math.trunc(Number(budget.amount))) : "",
-  );
+  const [amount, setAmount] = React.useState("");
   const [isSaving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // budgetは非同期に取得されるため、useStateの初期値だけでは保存済みの予算額が
+  // 入力欄に反映されない(初回レンダー時点ではまだ読み込み中で未定義のことが多い)。
+  // budgetが変わるたびに入力欄の値を同期させる。
+  React.useEffect(() => {
+    setAmount(budget ? String(Math.trunc(Number(budget.amount))) : "");
+  }, [budget]);
 
   async function handleSave() {
     if (!amount) return;
     setSaving(true);
+    setError(null);
     try {
       await onSave(Number(amount));
+    } catch (err) {
+      setError(getErrorMessage(err, "保存できませんでした"));
     } finally {
       setSaving(false);
     }
@@ -111,16 +121,17 @@ function BudgetRow({
 
         <div className="mt-3 flex gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="numeric"
             placeholder="予算額を入力"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(normalizeIntegerInput(e.target.value))}
           />
           <Button size="sm" onClick={handleSave} disabled={isSaving || !amount}>
             保存
           </Button>
         </div>
+        {error && <p className="mt-1.5 text-sm text-caution-600">{error}</p>}
       </CardContent>
     </Card>
   );

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { useAccounts } from "@/features/accounts/api";
 import { useCategories } from "@/features/categories/api";
 import {
@@ -6,8 +7,9 @@ import {
   useUpdateTransaction,
   type TransactionInput,
 } from "@/features/transactions/api";
-import { getFieldErrors } from "@/lib/api";
-import { todayLocalDate as today } from "@/lib/utils";
+import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
+import { normalizeIntegerInput, todayLocalDate as today } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import type { Transaction, TransactionType } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +53,7 @@ export function TransactionFormDialog({
   const { data: categories = [] } = useCategories();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
+  const { toast } = useToast();
 
   const [type, setType] = React.useState<TransactionType>("expense");
   const [accountId, setAccountId] = React.useState("");
@@ -83,6 +86,10 @@ export function TransactionFormDialog({
 
   const categoriesForType = categories.filter((c) => c.type === type);
   const isPending = createTransaction.isPending || updateTransaction.isPending;
+  const hasNoAccounts = accounts.length === 0;
+  // バックエンドの制限(直近20年・未来日不可)と合わせておく
+  const minDate = `${new Date().getFullYear() - 20}-01-01`;
+  const maxDate = today();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,9 +97,11 @@ export function TransactionFormDialog({
 
     const input: TransactionInput = {
       type,
-      account_id: Number(accountId),
-      category_id: Number(categoryId),
-      amount: Number(amount),
+      // 口座・カテゴリ未選択、金額未入力を0に丸めてしまうと、バックエンドの必須チェックではなく
+      // 「1円以上」等の的外れなエラーが返ってしまうため、未入力はundefinedのまま送信する
+      account_id: accountId ? Number(accountId) : (undefined as unknown as number),
+      category_id: categoryId ? Number(categoryId) : (undefined as unknown as number),
+      amount: amount ? Number(amount) : (undefined as unknown as number),
       date,
       note: note || undefined,
     };
@@ -105,7 +114,17 @@ export function TransactionFormDialog({
       onOpenChange(false);
       onSaved?.(saved);
     } catch (error) {
-      setFieldErrors(getFieldErrors(error));
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      // 422（入力エラー）以外、またはフィールドに紐付かないエラーはモーダル内に何も表示されず
+      // 無反応に見えてしまうため、トーストで通知する
+      if (!isApiError(error) || error.response.status !== 422 || Object.keys(errors).length === 0) {
+        toast({
+          title: "保存できませんでした",
+          description: getErrorMessage(error, "通信に失敗しました。しばらくしてから再度お試しください"),
+          variant: "caution",
+        });
+      }
     }
   }
 
@@ -116,7 +135,7 @@ export function TransactionFormDialog({
           <DialogTitle>{isEditing ? "取引を編集" : "支出・収入を登録"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label>種別</Label>
             <div className="flex gap-2">
@@ -143,18 +162,28 @@ export function TransactionFormDialog({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tx-account">口座</Label>
-            <Select value={accountId} onValueChange={setAccountId}>
-              <SelectTrigger id="tx-account">
-                <SelectValue placeholder="口座を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={String(account.id)}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {hasNoAccounts ? (
+              <p className="rounded-lg border border-caution-200 bg-caution-50 px-3 py-2 text-sm text-caution-600">
+                口座が登録されていません。先に
+                <Link to="/accounts" className="underline" onClick={() => onOpenChange(false)}>
+                  口座管理
+                </Link>
+                から口座を登録してください。
+              </p>
+            ) : (
+              <Select value={accountId} onValueChange={setAccountId}>
+                <SelectTrigger id="tx-account">
+                  <SelectValue placeholder="口座を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={String(account.id)}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {fieldErrors.account_id && <p className="text-sm text-ink-400">{fieldErrors.account_id}</p>}
           </div>
 
@@ -179,18 +208,26 @@ export function TransactionFormDialog({
             <Label htmlFor="tx-amount">金額</Label>
             <Input
               id="tx-amount"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={1}
+              required
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(normalizeIntegerInput(e.target.value))}
             />
             {fieldErrors.amount && <p className="text-sm text-ink-400">{fieldErrors.amount}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tx-date">日付</Label>
-            <Input id="tx-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input
+              id="tx-date"
+              type="date"
+              required
+              min={minDate}
+              max={maxDate}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
             {fieldErrors.date && <p className="text-sm text-ink-400">{fieldErrors.date}</p>}
           </div>
 
@@ -204,7 +241,7 @@ export function TransactionFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               キャンセル
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending || hasNoAccounts}>
               {isPending ? "保存中..." : "保存する"}
             </Button>
           </DialogFooter>

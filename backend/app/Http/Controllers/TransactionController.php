@@ -28,9 +28,10 @@ class TransactionController extends Controller
      */
     public function export(TransactionIndexRequest $request): StreamedResponse
     {
+        // 画面の取引一覧と同じ並び順（新しい日付が先頭）でエクスポートする
         $transactions = $this->filteredQuery($request)
-            ->orderBy('date')
-            ->orderBy('id')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
             ->get();
 
         $filename = 'transactions_'.now()->format('Ymd_His').'.csv';
@@ -45,10 +46,10 @@ class TransactionController extends Controller
                 fputcsv($handle, [
                     $transaction->date->toDateString(),
                     $transaction->type === 'income' ? '収入' : '支出',
-                    $transaction->category->name,
-                    $transaction->account->name,
+                    $this->csvSafe($transaction->category->name),
+                    $this->csvSafe($transaction->account->name),
                     (int) $transaction->amount,
-                    $transaction->note,
+                    $this->csvSafe($transaction->note),
                 ]);
             }
 
@@ -56,6 +57,19 @@ class TransactionController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * CSVインジェクション対策。=, +, -, @ で始まる値はExcel/Google Sheets等で数式として
+     * 評価されうるため、先頭にシングルクォートを付与して文字列として扱わせる。
+     */
+    private function csvSafe(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        return preg_match('/^[=+\-@\t\r]/', $value) === 1 ? "'".$value : $value;
     }
 
     /** 自分の取引として新規登録できる（権限設計 No.16）。account_id/category_idは自分の所有物のみ許可。 */

@@ -23,7 +23,7 @@ class RecurringRuleRequest extends FormRequest
                 Rule::exists('categories', 'id')->where('user_id', $this->user()?->id),
             ],
             'name' => ['required', 'string', 'max:100'],
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'integer', 'min:1', 'max:9999999999'],
             'day_of_month' => ['required', 'integer', 'between:1,31'],
         ];
     }
@@ -39,8 +39,11 @@ class RecurringRuleRequest extends FormRequest
             'category_id.required' => 'カテゴリを選択してください',
             'category_id.exists' => '指定されたカテゴリが見つかりません',
             'name.required' => '名称と金額を入力してください',
+            'name.max' => '名称は100文字以内で入力してください',
             'amount.required' => '名称と金額を入力してください',
+            'amount.integer' => '金額は整数で入力してください',
             'amount.min' => '1円以上の金額を入力してください',
+            'amount.max' => '金額が大きすぎます',
             'day_of_month.required' => '毎月の発生日を選択してください',
             'day_of_month.between' => '発生日は1〜31の範囲で指定してください',
         ];

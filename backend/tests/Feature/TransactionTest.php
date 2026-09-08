@@ -132,6 +132,38 @@ class TransactionTest extends TestCase
         $this->assertDatabaseHas('transactions', ['id' => $transaction->id, 'amount' => 2000]);
     }
 
+    public function test_future_dated_transactions_are_rejected(): void
+    {
+        $user = User::factory()->create();
+        [$account, $category] = $this->createOwnedResources($user);
+
+        $response = $this->actingAs($user)->postJson('/api/transactions', [
+            'type' => 'expense',
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'amount' => 1000,
+            'date' => now()->addDay()->toDateString(),
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('date');
+    }
+
+    public function test_far_past_transactions_are_rejected(): void
+    {
+        $user = User::factory()->create();
+        [$account, $category] = $this->createOwnedResources($user);
+
+        $response = $this->actingAs($user)->postJson('/api/transactions', [
+            'type' => 'expense',
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'amount' => 1000,
+            'date' => now()->subYears(30)->toDateString(),
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('date');
+    }
+
     public function test_own_transaction_can_be_deleted(): void
     {
         $user = User::factory()->create();

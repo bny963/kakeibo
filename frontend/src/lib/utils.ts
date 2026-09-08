@@ -28,3 +28,19 @@ export function todayLocalDate(): string {
 export function currentLocalMonth(): string {
   return todayLocalDate().slice(0, 7);
 }
+
+/**
+ * 金額・日数などの整数入力欄用。全角数字を半角に変換したうえで数字以外の文字を取り除く。
+ * 小数点も取り除くため、四捨五入が黙って発生することもなくなる（金額は常に整数円で扱う）。
+ */
+export function normalizeIntegerInput(raw: string): string {
+  const halfWidth = raw.replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xfee0));
+  return halfWidth.replace(/[^0-9]/g, "");
+}
+
+/** 全角英数記号（Ａ-Ｚ、０-９、＠ 等）を半角に変換する。全角メールアドレスがそのまま送信される不具合対策。 */
+export function normalizeFullWidthAscii(raw: string): string {
+  return raw
+    .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/　/g, " ");
+}

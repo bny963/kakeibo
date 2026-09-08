@@ -39,7 +39,8 @@ class BudgetController extends Controller
             $spent = (float) ($spentByCategory[$budget->category_id] ?? 0);
             $amount = (float) $budget->amount;
             // 予算0円（支出しない想定のカテゴリ）は割り算できないため、支出があれば100%＝超過として扱う。
-            $usageRate = $amount > 0 ? round(min($spent / $amount, 1) * 100, 1) : ($spent > 0 ? 100.0 : 0.0);
+            // 超過幅が分かるよう100%で頭打ちにはしない（プログレスバー側で表示を100%にクランプする）。
+            $usageRate = $amount > 0 ? round($spent / $amount * 100, 1) : ($spent > 0 ? 100.0 : 0.0);
 
             return [
                 ...$budget->toArray(),

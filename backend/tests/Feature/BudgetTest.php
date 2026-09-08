@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\Category;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,5 +46,31 @@ class BudgetTest extends TestCase
 
         $index = $this->actingAs($user)->getJson('/api/budgets?month=2026-08');
         $index->assertOk()->assertJsonFragment(['usage_rate' => 0.0]);
+    }
+
+    /** 使用率が100%で頭打ちになり超過幅が分からない不具合の修正に対応。 */
+    public function test_usage_rate_is_not_capped_at_100_percent_when_over_budget(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->for($user)->create();
+        $category = Category::factory()->for($user)->expense()->create();
+
+        $this->actingAs($user)->postJson('/api/budgets', [
+            'category_id' => $category->id,
+            'amount' => 10000,
+            'month' => '2026-08',
+        ])->assertCreated();
+
+        Transaction::factory()->for($user)->create([
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'type' => 'expense',
+            'amount' => 15000,
+            'date' => '2026-08-10',
+        ]);
+
+        $index = $this->actingAs($user)->getJson('/api/budgets?month=2026-08');
+
+        $index->assertOk()->assertJsonFragment(['usage_rate' => 150.0, 'status' => 'over']);
     }
 }

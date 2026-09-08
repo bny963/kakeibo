@@ -33,6 +33,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name.required' => 'お名前を入力してください',
+            'name.max' => 'お名前は100文字以内で入力してください',
             'email.required' => 'メールアドレスを入力してください',
             'email.email' => 'メールアドレスの形式が正しくありません',
             'email.unique' => 'このメールアドレスは既に登録されています。ログインをお試しください',

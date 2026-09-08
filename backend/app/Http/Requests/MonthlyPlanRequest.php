@@ -19,9 +19,9 @@ class MonthlyPlanRequest extends FormRequest
     {
         return [
             'month' => ['required', 'date_format:Y-m'],
-            'income' => ['required', 'numeric', 'min:0'],
-            'fixed_costs' => ['required', 'numeric', 'min:0'],
-            'savings_goal' => ['required', 'numeric', 'min:0'],
+            'income' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'fixed_costs' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'savings_goal' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
         ];
     }
 
@@ -34,8 +34,17 @@ class MonthlyPlanRequest extends FormRequest
             'month.required' => '対象月を選択してください',
             'month.date_format' => '対象月はYYYY-MM形式で指定してください',
             'income.required' => '手取り収入を入力してください',
+            'income.numeric' => '手取り収入は数値で入力してください',
+            'income.min' => '手取り収入は0円以上で入力してください',
+            'income.max' => '手取り収入が大きすぎます',
             'fixed_costs.required' => '固定費を入力してください',
+            'fixed_costs.numeric' => '固定費は数値で入力してください',
+            'fixed_costs.min' => '固定費は0円以上で入力してください',
+            'fixed_costs.max' => '固定費が大きすぎます',
             'savings_goal.required' => '貯金目標額を入力してください',
+            'savings_goal.numeric' => '貯金目標額は数値で入力してください',
+            'savings_goal.min' => '貯金目標額は0円以上で入力してください',
+            'savings_goal.max' => '貯金目標額が大きすぎます',
         ];
     }
 

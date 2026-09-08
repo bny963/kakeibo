@@ -64,19 +64,21 @@ export function Toaster() {
           key={t.id}
           role="status"
           className={cn(
-            "pointer-events-auto rounded-xl border p-4 shadow-md",
+            "pointer-events-auto flex items-start gap-3 rounded-xl border p-4 shadow-md",
             variantClasses[t.variant ?? "default"],
           )}
         >
+          <div className="flex-1">
+            <p className="text-sm font-semibold">{t.title}</p>
+            {t.description && <p className="mt-1 text-sm opacity-90">{t.description}</p>}
+          </div>
           <button
             onClick={() => dismiss(t.id)}
-            className="float-right text-xs text-ink-400 hover:text-ink-700"
+            className="shrink-0 text-xs text-ink-400 hover:text-ink-700"
             aria-label="閉じる"
           >
             ✕
           </button>
-          <p className="text-sm font-semibold">{t.title}</p>
-          {t.description && <p className="mt-1 text-sm opacity-90">{t.description}</p>}
         </div>
       ))}
     </div>
