@@ -113,8 +113,12 @@ function BudgetRow({
               indicatorClassName={budget.status === "ok" ? "bg-brand-500" : "bg-caution-400"}
             />
             <p className="mt-1 text-xs text-ink-500">
-              {formatYen(budget.spent)} / {formatYen(Number(budget.amount))}（使用率
-              {budget.usage_rate}%）
+              {formatYen(budget.spent)} / {formatYen(Number(budget.amount))}
+              {Number(budget.amount) > 0
+                ? `（使用率${budget.usage_rate}%）`
+                : budget.spent > 0
+                  ? "（予算が0円のため使用率は計算できません）"
+                  : null}
             </p>
           </div>
         )}
