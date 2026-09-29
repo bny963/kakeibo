@@ -23,6 +23,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        // 貯金箱のビジュアル（コスメティック要素）。見た目のみに使い、本来機能には影響しない。
+        'piggy_bank_color',
+        'piggy_bank_pattern',
+        'piggy_bank_character',
     ];
 
     /**
@@ -88,5 +92,11 @@ class User extends Authenticatable
     public function piggyBankRecords(): HasMany
     {
         return $this->hasMany(PiggyBankRecord::class);
+    }
+
+    /** @return HasMany<PiggyBankSkinUnlock> */
+    public function piggyBankSkinUnlocks(): HasMany
+    {
+        return $this->hasMany(PiggyBankSkinUnlock::class);
     }
 }
