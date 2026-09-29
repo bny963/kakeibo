@@ -99,6 +99,35 @@ export interface PiggyBankHistory {
   weeks: PiggyBankRecord[];
 }
 
+export type PiggyBankSkinCategory = "color" | "pattern" | "character";
+
+/**
+ * 貯金箱のビジュアル（色・柄・キャラクター）カタログの1要素。
+ * ポイントで解禁できるコスメティック要素で、記録・集計・レポート等の本来機能には影響しない。
+ */
+export interface PiggyBankSkin {
+  key: string;
+  category: PiggyBankSkinCategory;
+  label: string;
+  cost: number;
+  /** colorはCSSカラーコード、patternはパターン種別キー、characterは絵文字。 */
+  value: string;
+  owned: boolean;
+  equipped: boolean;
+}
+
+export interface PiggyBankAppearance {
+  color: string;
+  pattern: string;
+  character: string;
+}
+
+export interface PiggyBankSkinCatalog {
+  points_balance: number;
+  skins: PiggyBankSkin[];
+  appearance: PiggyBankAppearance;
+}
+
 export interface MonthlySummary {
   month: string;
   income: number;

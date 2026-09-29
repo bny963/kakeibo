@@ -1,7 +1,11 @@
-import { PiggyBank } from "lucide-react";
-import { useThisWeek } from "@/features/piggyBank/api";
+import * as React from "react";
+import { PiggyBank, Sparkles } from "lucide-react";
+import { usePiggyBankSkinCatalog, useThisWeek } from "@/features/piggyBank/api";
+import { PiggyBankCustomizeDialog } from "@/features/piggyBank/components/PiggyBankCustomizeDialog";
+import { patternBackgroundStyle } from "@/features/piggyBank/lib/skinPatterns";
 import { formatYen } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface PiggyBankMeterProps {
@@ -13,9 +17,28 @@ interface PiggyBankMeterProps {
  * 支出を引き算(マイナス)で見せず、使わなかった差額をプラスの報酬として可視化する。
  * メーターの塗りつぶし色は使用率に応じてgreen→amberに変わるが、赤字表現は一切使わない
  * （dataviz skillのMeter仕様: fillは同ランプの濃淡、状態色は配色ポリシーのgreen/gold/amberのみ）。
+ *
+ * カードのマスコット・装飾色・背景の柄はポイントで解禁した見た目（きせかえ）を反映するが、
+ * これは完全にコスメティックな任意要素で、進捗バーの状態色（green/gold/amber）には一切影響しない。
  */
 export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
   const { data: week, isLoading } = useThisWeek();
+  const { data: skinCatalog } = usePiggyBankSkinCatalog();
+  const [isCustomizeOpen, setCustomizeOpen] = React.useState(false);
+
+  const equippedColor = skinCatalog?.skins.find(
+    (skin) => skin.category === "color" && skin.equipped,
+  )?.value ?? "#f472b6";
+  const equippedPattern = skinCatalog?.skins.find(
+    (skin) => skin.category === "pattern" && skin.equipped,
+  )?.value ?? "none";
+  const equippedCharacter = skinCatalog?.skins.find(
+    (skin) => skin.category === "character" && skin.equipped,
+  )?.value;
+
+  const customizeDialog = (
+    <PiggyBankCustomizeDialog open={isCustomizeOpen} onOpenChange={setCustomizeOpen} />
+  );
 
   if (isLoading || !week) {
     return (
@@ -37,6 +60,7 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
           </p>
           <Button onClick={onSetupPlan}>今月のプランを設定する</Button>
         </CardContent>
+        {customizeDialog}
       </Card>
     );
   }
@@ -47,9 +71,36 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex-row items-center gap-2 space-y-0">
-        <PiggyBank className="h-5 w-5 text-gold-600" />
-        <CardTitle>貯金箱</CardTitle>
+      <CardHeader
+        className="flex-row items-center justify-between gap-2 space-y-0"
+        style={patternBackgroundStyle(equippedPattern, equippedColor)}
+      >
+        <div className="flex items-center gap-2">
+          {equippedCharacter ? (
+            <span className="text-xl leading-none" aria-hidden="true">
+              {equippedCharacter}
+            </span>
+          ) : (
+            <PiggyBank className="h-5 w-5" style={{ color: equippedColor }} />
+          )}
+          <CardTitle>貯金箱</CardTitle>
+        </div>
+        <div className="flex items-center gap-2">
+          {skinCatalog && (
+            <Badge variant="outline" className="hidden sm:inline-flex">
+              {skinCatalog.points_balance.toLocaleString("ja-JP")}pt
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCustomizeOpen(true)}
+            aria-label="貯金箱のきせかえ"
+          >
+            <Sparkles className="h-4 w-4" />
+            きせかえ
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-ink-500">
@@ -89,6 +140,7 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
           </p>
         )}
       </CardContent>
+      {customizeDialog}
     </Card>
   );
 }

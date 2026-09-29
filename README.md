@@ -11,6 +11,9 @@
 
 - 1週間の利用可能額の自動算出（手取り − 固定費 − 貯金目標 ÷ 4.3週）とダッシュボード表示
 - 「貯金箱」UI：使わなかった差額をプラスの報酬として可視化
+- 貯金箱のきせかえ：貯まった金額に応じたポイントで、貯金箱の色・柄・キャラクターを解禁できる
+  （コスメティック要素のみが対象で、記録・集計・レポート等の本来機能は一切ポイントでロックしない。
+  完全に任意で、無視して使い続けても支障はない）
 - 週次の小さな目標設定・カテゴリ別月間予算とアラート
 - 手入力ベースの収支登録（銀行API連携は意図的に非対応）
 - 固定費・サブスクの登録と支払いリマインド
@@ -55,6 +58,7 @@ erDiagram
   users ||--o{ recurring_rules : has
   users ||--o{ monthly_plans : has
   users ||--o{ piggy_bank_records : has
+  users ||--o{ piggy_bank_skin_unlocks : has
   accounts ||--o{ transactions : has
   categories ||--o{ transactions : has
   categories ||--o{ budgets : has
@@ -64,6 +68,15 @@ erDiagram
     varchar name
     varchar email
     varchar password
+    varchar piggy_bank_color "装着中の貯金箱の色（コスメティック、任意）"
+    varchar piggy_bank_pattern "装着中の貯金箱の柄（コスメティック、任意）"
+    varchar piggy_bank_character "装着中の貯金箱キャラクター（コスメティック、任意）"
+  }
+  piggy_bank_skin_unlocks {
+    bigint id PK
+    bigint user_id FK
+    varchar skin_key "解禁したビジュアルのキー"
+    int points_spent "解禁時に消費したポイント"
   }
   accounts {
     bigint id PK

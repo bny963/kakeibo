@@ -6,6 +6,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MonthlyPlanController;
 use App\Http\Controllers\PiggyBankController;
+use App\Http\Controllers\PiggyBankSkinController;
 use App\Http\Controllers\RecurringRuleController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\TransactionController;
@@ -51,6 +52,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/piggy-bank', [PiggyBankController::class, 'index']);
     Route::get('/piggy-bank/this-week', [PiggyBankController::class, 'thisWeek']);
+
+    // 貯金箱のビジュアル（色・柄・キャラクター）をポイントで解禁・着せ替えするコスメティック機能。
+    // 記録・集計・レポート等の本来機能には一切影響しない、完全に任意の要素。
+    Route::get('/piggy-bank/skins', [PiggyBankSkinController::class, 'index']);
+    Route::post('/piggy-bank/skins/{skinKey}/unlock', [PiggyBankSkinController::class, 'unlock']);
+    Route::post('/piggy-bank/skins/{skinKey}/equip', [PiggyBankSkinController::class, 'equip']);
 
     Route::get('/budgets', [BudgetController::class, 'index']);
     Route::post('/budgets', [BudgetController::class, 'store']);
