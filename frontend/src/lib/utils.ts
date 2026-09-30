@@ -29,6 +29,11 @@ export function currentLocalMonth(): string {
   return todayLocalDate().slice(0, 7);
 }
 
+/** YYYY-MM を「10月」のような表示用ラベルにする。 */
+export function formatMonthLabel(month: string): string {
+  return `${Number(month.slice(5, 7))}月`;
+}
+
 /**
  * 金額・日数などの整数入力欄の onChange 用。全角の数字・記号（０-９、．、－、，）を半角に揃えるだけで、
  * 文字は取り除かない。以前は数字以外を黙って取り除いていたため「1.5」が「15」、「-100」が「100」のように

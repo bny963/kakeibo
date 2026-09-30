@@ -10,6 +10,7 @@ const baseStatus: PiggyBankWeekStatus = {
   saved_amount: 27558.14,
   is_over_budget: false,
   has_plan: true,
+  plan_month: "2026-08",
 };
 
 /**
