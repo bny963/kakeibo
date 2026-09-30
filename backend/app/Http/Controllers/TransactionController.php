@@ -7,6 +7,7 @@ use App\Http\Requests\TransactionRequest;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionController extends Controller
@@ -72,13 +73,19 @@ class TransactionController extends Controller
         return preg_match('/^[=+\-@\t\r]/', $value) === 1 ? "'".$value : $value;
     }
 
-    /** 自分の取引として新規登録できる（権限設計 No.16）。account_id/category_idは自分の所有物のみ許可。 */
+    /**
+     * 自分の取引として新規登録できる（権限設計 No.16）。account_id/category_idは自分の所有物のみ許可。
+     *
+     * 口座残高は TransactionObserver が取引の保存に連動して更新する。登録・編集・削除とも、
+     * 取引の保存と残高更新を1つのDBトランザクションにまとめ、途中で失敗した場合は両方を取り消す
+     * （取引だけ保存されて残高が変わらない、といった不整合を残さないため）。
+     */
     public function store(TransactionRequest $request): JsonResponse
     {
-        $transaction = $request->user()->transactions()->create([
+        $transaction = DB::transaction(fn () => $request->user()->transactions()->create([
             ...$request->validated(),
             'is_recurring' => false,
-        ]);
+        ]));
 
         return response()->json($transaction->load(['account', 'category']), 201);
     }
@@ -95,7 +102,7 @@ class TransactionController extends Controller
     public function update(TransactionRequest $request, int $id): JsonResponse
     {
         $transaction = $request->user()->transactions()->findOrFail($id);
-        $transaction->update($request->validated());
+        DB::transaction(fn () => $transaction->update($request->validated()));
 
         return response()->json($transaction->load(['account', 'category']));
     }
@@ -104,7 +111,7 @@ class TransactionController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $transaction = $request->user()->transactions()->findOrFail($id);
-        $transaction->delete();
+        DB::transaction(fn () => $transaction->delete());
 
         return response()->json(null, 204);
     }
