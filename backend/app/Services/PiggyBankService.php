@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\MonthlyPlan;
 use App\Models\PiggyBankRecord;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -16,16 +17,17 @@ class PiggyBankService
 {
     /**
      * 指定週（デフォルトは今週）の利用可能額・支出・貯金額を計算する。
-     * 月をまたぐ週は「週の開始日が属する月」の月次プランを基準にする。
+     * 月をまたぐ週は「週の木曜日が属する月」の月次プランを基準にする（MonthlyPlan::monthForWeek）。
      *
-     * @return array{week_start_date: string, week_end_date: string, weekly_allowance: float, spent_amount: float, saved_amount: float, is_over_budget: bool, has_plan: bool}
+     * @return array{week_start_date: string, week_end_date: string, weekly_allowance: float, spent_amount: float, saved_amount: float, is_over_budget: bool, has_plan: bool, plan_month: string}
      */
     public function computeWeekStatus(User $user, ?CarbonImmutable $weekStart = null): array
     {
         $weekStart = ($weekStart ?? CarbonImmutable::now())->startOfWeek(CarbonImmutable::MONDAY);
         $weekEnd = $weekStart->addDays(6);
 
-        $plan = $user->monthlyPlans()->where('month', $weekStart->format('Y-m'))->first();
+        $planMonth = MonthlyPlan::monthForWeek($weekStart);
+        $plan = $user->monthlyPlans()->where('month', $planMonth)->first();
         $weeklyAllowance = $plan?->weeklyAllowance() ?? 0.0;
 
         $spent = (float) $user->transactions()
@@ -43,6 +45,7 @@ class PiggyBankService
             'saved_amount' => round($saved, 2),
             'is_over_budget' => $spent > $weeklyAllowance,
             'has_plan' => $plan !== null,
+            'plan_month' => $planMonth,
         ];
     }
 

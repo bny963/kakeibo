@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,19 @@ class MonthlyPlan extends Model
             'fixed_costs' => 'decimal:2',
             'savings_goal' => 'decimal:2',
         ];
+    }
+
+    /**
+     * 指定した週（月曜始まり）の計算に使う月次プランの月（YYYY-MM）。
+     *
+     * 週の「木曜日」が属する月とする（ISO週番号と同じく、7日のうち4日以上を含む月）。
+     * 以前は「週の開始日（月曜）が属する月」だったため、例えば 2026-10-01(木) に10月のプランを
+     * 設定しても、その週（9/28〜10/4）は9月のプランを参照してしまい、案内どおりに設定しても
+     * 使い始められなかった。設定画面もこの月を開くよう、APIで plan_month として返す。
+     */
+    public static function monthForWeek(CarbonInterface $weekStart): string
+    {
+        return $weekStart->toImmutable()->startOfWeek(CarbonInterface::MONDAY)->addDays(3)->format('Y-m');
     }
 
     public function user(): BelongsTo
