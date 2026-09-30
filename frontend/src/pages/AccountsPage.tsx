@@ -8,7 +8,7 @@ import {
   type AccountInput,
 } from "@/features/accounts/api";
 import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
-import { formatYen, normalizeIntegerInput } from "@/lib/utils";
+import { formatYen, normalizeIntegerInput, parseIntegerFields } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Account, AccountType } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -75,10 +75,15 @@ export default function AccountsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFieldErrors({});
+    const parsed = parseIntegerFields({ balance });
+    if (parsed.hasError) {
+      setFieldErrors(parsed.errors as Record<string, string>);
+      return;
+    }
     const input: AccountInput = {
       name,
       type,
-      balance: balance ? Number(balance) : (undefined as unknown as number),
+      balance: parsed.values.balance,
     };
 
     try {

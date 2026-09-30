@@ -22,7 +22,7 @@ class BudgetRequest extends FormRequest
                 'required',
                 Rule::exists('categories', 'id')->where('user_id', $this->user()?->id),
             ],
-            'amount' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'amount' => ['required', 'integer', 'min:0', 'max:9999999999'],
             'month' => ['required', 'date_format:Y-m'],
         ];
     }
@@ -36,7 +36,7 @@ class BudgetRequest extends FormRequest
             'category_id.required' => 'カテゴリを選択してください',
             'category_id.exists' => '指定されたカテゴリが見つかりません',
             'amount.required' => '予算金額を入力してください',
-            'amount.numeric' => '予算金額は数値で入力してください',
+            'amount.integer' => '予算金額は整数で入力してください',
             'amount.min' => '予算金額は0円以上で入力してください',
             'amount.max' => '予算金額が大きすぎます',
             'month.required' => '対象月を選択してください',

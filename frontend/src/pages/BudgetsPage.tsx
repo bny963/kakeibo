@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { currentLocalMonth as currentMonth, formatYen, normalizeIntegerInput } from "@/lib/utils";
+import { currentLocalMonth as currentMonth, formatYen, normalizeIntegerInput, parseIntegerInput } from "@/lib/utils";
 import type { Budget } from "@/types/api";
 
 // 状態遷移設計③: 順調(green) / まもなく到達・超過(amber)。赤字は使用しない。
@@ -84,11 +84,16 @@ function BudgetRow({
   }, [budget]);
 
   async function handleSave() {
-    if (!amount) return;
+    const parsed = parseIntegerInput(amount);
+    if (!parsed.ok) {
+      setError(parsed.error);
+      return;
+    }
+    if (parsed.value === null) return;
     setSaving(true);
     setError(null);
     try {
-      await onSave(Number(amount));
+      await onSave(parsed.value);
     } catch (err) {
       setError(getErrorMessage(err, "保存できませんでした"));
     } finally {
