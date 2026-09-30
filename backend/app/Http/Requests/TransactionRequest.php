@@ -40,6 +40,24 @@ class TransactionRequest extends FormRequest
             // 過去日も入力ミス防止のため直近20年に制限する。
             'date' => ['required', 'date', 'after_or_equal:'.now()->subYears(20)->toDateString(), 'before_or_equal:'.now()->toDateString()],
             'note' => ['nullable', 'string', 'max:200'],
+            // 固定費（家賃・サブスク等）の支払いとして記録する取引。月次プランの「固定費」で既に差し引いている
+            // ため、週の支出の集計からは除外する（二重に控除しない）。月のレポート・口座残高には含める。
+            'is_recurring' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * 保存用の属性。固定費の印は支出にのみ意味があるため、収入では常に false にする。
+     *
+     * @return array<string, mixed>
+     */
+    public function transactionAttributes(): array
+    {
+        $validated = $this->validated();
+
+        return [
+            ...$validated,
+            'is_recurring' => $validated['type'] === 'expense' && (bool) ($validated['is_recurring'] ?? false),
         ];
     }
 

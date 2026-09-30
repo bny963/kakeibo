@@ -27,6 +27,8 @@ export interface TransactionInput {
   amount: number;
   date: string;
   note?: string;
+  /** 固定費（家賃・サブスク等）の支払い。月次プランの固定費で差し引き済みのため、週の支出には数えない */
+  is_recurring?: boolean;
 }
 
 export function useCreateTransaction() {
