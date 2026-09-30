@@ -194,7 +194,12 @@ export default function TransactionsPage() {
             {data?.data.map((transaction) => (
               <tr key={transaction.id} className="border-b border-ink-50 last:border-0">
                 <td className="whitespace-nowrap px-4 py-3 text-ink-700">{transaction.date}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-ink-700">{transaction.category?.name}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-ink-700">
+                  {transaction.category?.name}
+                  {transaction.is_recurring && (
+                    <span className="ml-2 rounded bg-ink-100 px-1.5 py-0.5 text-xs text-ink-500">固定費</span>
+                  )}
+                </td>
                 <td className="whitespace-nowrap px-4 py-3 text-ink-500">{transaction.account?.name}</td>
                 <td className="max-w-[160px] truncate px-4 py-3 text-ink-500">{transaction.note}</td>
                 <td

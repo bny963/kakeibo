@@ -30,8 +30,10 @@ class PiggyBankService
         $plan = $user->monthlyPlans()->where('month', $planMonth)->first();
         $weeklyAllowance = $plan?->weeklyAllowance() ?? 0.0;
 
+        // 固定費として記録した支出（is_recurring）は、月次プランの「固定費」で既に差し引いているため数えない
         $spent = (float) $user->transactions()
             ->where('type', 'expense')
+            ->where('is_recurring', false)
             ->whereBetween('date', [$weekStart->toDateString(), $weekEnd->toDateString()])
             ->sum('amount');
 

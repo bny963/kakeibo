@@ -61,6 +61,7 @@ export function TransactionFormDialog({
   const [amount, setAmount] = React.useState("");
   const [date, setDate] = React.useState(today());
   const [note, setNote] = React.useState("");
+  const [isRecurring, setIsRecurring] = React.useState(false);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
@@ -74,6 +75,7 @@ export function TransactionFormDialog({
       setAmount(String(Math.trunc(Number(transaction.amount))));
       setDate(transaction.date);
       setNote(transaction.note ?? "");
+      setIsRecurring(transaction.is_recurring);
     } else {
       setType("expense");
       setAccountId("");
@@ -81,6 +83,7 @@ export function TransactionFormDialog({
       setAmount("");
       setDate(today());
       setNote("");
+      setIsRecurring(false);
     }
   }, [open, transaction]);
 
@@ -110,6 +113,7 @@ export function TransactionFormDialog({
       amount: parsed.values.amount,
       date,
       note: note || undefined,
+      is_recurring: type === "expense" && isRecurring,
     };
 
     try {
@@ -242,6 +246,25 @@ export function TransactionFormDialog({
             <Input id="tx-note" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
             {fieldErrors.note && <p className="text-sm text-ink-400">{fieldErrors.note}</p>}
           </div>
+
+          {type === "expense" && (
+            <div className="flex items-start gap-2">
+              <input
+                id="tx-is-recurring"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-brand-600"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+              />
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="tx-is-recurring">固定費の支払いとして記録する</Label>
+                <p className="text-xs text-ink-500">
+                  家賃・サブスクなど、月のプランの「固定費」に含めた支払いです。二重に数えないよう、
+                  週の支出（貯金箱）には含めません。月のレポートと口座残高には反映されます。
+                </p>
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
