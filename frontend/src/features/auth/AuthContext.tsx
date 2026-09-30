@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ensureCsrfCookie, isApiError } from "@/lib/api";
 
 export interface AuthUser {
@@ -39,6 +39,16 @@ const AuthContext = React.createContext<AuthContextValue | null>(null);
 
 const CURRENT_USER_QUERY_KEY = ["auth", "user"] as const;
 
+/**
+ * ログイン中ユーザー以外の、家計データのキャッシュをすべて破棄する。
+ * 家計データのクエリキー（["transactions"], ["summary", ...] 等）はユーザーごとに分かれていないため、
+ * 無効化（古い状態として扱う）だけでは、同じブラウザで別の人がログインし直した際に前の人のデータが
+ * 再取得完了までそのまま表示されてしまう。ユーザーが切り替わる時点でキャッシュ自体を削除する。
+ */
+function clearUserScopedQueries(queryClient: QueryClient) {
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== CURRENT_USER_QUERY_KEY[0] });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
 
@@ -59,10 +69,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     staleTime: 60_000,
   });
 
+  // セッション切れ（401）など、login/logout を経由せずにユーザーが変わった場合にも前の人のデータを残さない
+  const previousUserId = React.useRef<number | null | undefined>(undefined);
+  React.useEffect(() => {
+    if (isLoading) return;
+    const currentUserId = user?.id ?? null;
+    if (previousUserId.current !== undefined && previousUserId.current !== currentUserId) {
+      clearUserScopedQueries(queryClient);
+    }
+    previousUserId.current = currentUserId;
+  }, [user?.id, isLoading, queryClient]);
+
   const login = React.useCallback(
     async (email: string, password: string) => {
       await ensureCsrfCookie();
       await api.post("/api/login", { email, password });
+      clearUserScopedQueries(queryClient);
       await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
     },
     [queryClient],
@@ -77,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }) => {
       await ensureCsrfCookie();
       await api.post("/api/register", input);
+      clearUserScopedQueries(queryClient);
       await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
     },
     [queryClient],
@@ -85,11 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(async () => {
     await api.post("/api/logout");
     queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
-    // refetchType: "none" にしないと、画面遷移が完了する前に取引一覧・集計などのクエリが
-    // 即座に再取得を試みてしまい、既に失効したセッションに対する401がコンソールエラーとして
-    // 出てしまう。ログアウト時はキャッシュを破棄するだけにとどめ、再取得は次にマウントされた
-    // タイミングに任せる。
-    await queryClient.invalidateQueries({ refetchType: "none" });
+    // 以前は invalidateQueries（古い状態として扱うだけ）だったため、キャッシュ自体は残っていた。
+    // 再取得はせずキャッシュを削除する（再取得すると失効済みセッションへの401が出るため）。
+    clearUserScopedQueries(queryClient);
   }, [queryClient]);
 
   const forgotPassword = React.useCallback(async (email: string) => {
