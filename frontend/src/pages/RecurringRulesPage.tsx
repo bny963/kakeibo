@@ -9,7 +9,7 @@ import {
 } from "@/features/recurringRules/api";
 import { useCategories } from "@/features/categories/api";
 import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
-import { formatYen, normalizeIntegerInput } from "@/lib/utils";
+import { formatYen, normalizeIntegerInput, parseIntegerFields } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { RecurringRule } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
@@ -76,11 +76,16 @@ export default function RecurringRulesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFieldErrors({});
+    const parsed = parseIntegerFields({ amount, day_of_month: dayOfMonth });
+    if (parsed.hasError) {
+      setFieldErrors(parsed.errors as Record<string, string>);
+      return;
+    }
     const input: RecurringRuleInput = {
       name,
       category_id: categoryId ? Number(categoryId) : (undefined as unknown as number),
-      amount: amount ? Number(amount) : (undefined as unknown as number),
-      day_of_month: dayOfMonth ? Number(dayOfMonth) : (undefined as unknown as number),
+      amount: parsed.values.amount,
+      day_of_month: parsed.values.day_of_month,
     };
 
     try {

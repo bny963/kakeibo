@@ -8,7 +8,7 @@ import {
   type TransactionInput,
 } from "@/features/transactions/api";
 import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
-import { normalizeIntegerInput, todayLocalDate as today } from "@/lib/utils";
+import { normalizeIntegerInput, parseIntegerFields, todayLocalDate as today } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Transaction, TransactionType } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -95,13 +95,19 @@ export function TransactionFormDialog({
     e.preventDefault();
     setFieldErrors({});
 
+    const parsed = parseIntegerFields({ amount });
+    if (parsed.hasError) {
+      setFieldErrors(parsed.errors as Record<string, string>);
+      return;
+    }
+
     const input: TransactionInput = {
       type,
       // 口座・カテゴリ未選択、金額未入力を0に丸めてしまうと、バックエンドの必須チェックではなく
       // 「1円以上」等の的外れなエラーが返ってしまうため、未入力はundefinedのまま送信する
       account_id: accountId ? Number(accountId) : (undefined as unknown as number),
       category_id: categoryId ? Number(categoryId) : (undefined as unknown as number),
-      amount: amount ? Number(amount) : (undefined as unknown as number),
+      amount: parsed.values.amount,
       date,
       note: note || undefined,
     };

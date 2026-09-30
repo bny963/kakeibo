@@ -14,10 +14,11 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // 認証不要（基本設計書 Route,Controller 参照）
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+// 試行回数の制限は AppServiceProvider の RateLimiter 定義を参照
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth-sensitive');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-sensitive');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth-sensitive');
 
 // 認証必須
 Route::middleware('auth:sanctum')->group(function () {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMonthlyPlan, useSaveMonthlyPlan } from "@/features/monthlyPlan/api";
 import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
-import { normalizeIntegerInput } from "@/lib/utils";
+import { normalizeIntegerInput, parseIntegerFields } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,13 +48,14 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
     e.preventDefault();
     setFieldErrors({});
 
+    const parsed = parseIntegerFields({ income, fixed_costs: fixedCosts, savings_goal: savingsGoal });
+    if (parsed.hasError) {
+      setFieldErrors(parsed.errors as Record<string, string>);
+      return;
+    }
+
     try {
-      await saveMonthlyPlan.mutateAsync({
-        month,
-        income: income ? Number(income) : (undefined as unknown as number),
-        fixed_costs: fixedCosts ? Number(fixedCosts) : (undefined as unknown as number),
-        savings_goal: savingsGoal ? Number(savingsGoal) : (undefined as unknown as number),
-      });
+      await saveMonthlyPlan.mutateAsync({ month, ...parsed.values });
       onOpenChange(false);
     } catch (error) {
       const errors = getFieldErrors(error);

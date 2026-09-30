@@ -53,4 +53,46 @@ class LoginTest extends TestCase
         $response->assertOk();
         $this->getJson('/api/user')->assertOk()->assertJsonFragment(['email' => 'satsuki@example.com']);
     }
+
+    public function test_login_attempts_are_limited_per_email_and_ip(): void
+    {
+        User::factory()->create([
+            'email' => 'satsuki@example.com',
+            'password' => Hash::make('correct-password'),
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/login', [
+                'email' => 'satsuki@example.com',
+                'password' => 'wrong-password',
+            ])->assertStatus(422);
+        }
+
+        // 6回目は正しいパスワードでも429（総当たりで当たりを引いても通さない）
+        $response = $this->postJson('/api/login', [
+            'email' => 'satsuki@example.com',
+            'password' => 'correct-password',
+        ]);
+
+        $response->assertStatus(429);
+        $this->assertSame('しばらく時間をおいて再度お試しください', $response->json('message'));
+        $this->assertGuest();
+    }
+
+    public function test_login_limit_for_one_email_does_not_block_another_email(): void
+    {
+        User::factory()->create([
+            'email' => 'other@example.com',
+            'password' => Hash::make('correct-password'),
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/login', ['email' => 'satsuki@example.com', 'password' => 'wrong-password']);
+        }
+
+        $this->postJson('/api/login', [
+            'email' => 'other@example.com',
+            'password' => 'correct-password',
+        ])->assertOk();
+    }
 }

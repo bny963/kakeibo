@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cn, formatYen, normalizeFullWidthAscii, normalizeIntegerInput } from "@/lib/utils";
+import { cn, formatYen, normalizeFullWidthAscii, normalizeIntegerInput, parseIntegerInput } from "@/lib/utils";
 
 describe("formatYen", () => {
   it("formats a positive amount with a 円 suffix and thousands separators", () => {
@@ -30,12 +30,44 @@ describe("normalizeIntegerInput", () => {
     expect(normalizeIntegerInput("１２３４")).toBe("1234");
   });
 
-  it("strips non-digit characters, including decimal points", () => {
-    expect(normalizeIntegerInput("1,234.56円")).toBe("123456");
+  it("does not silently drop decimal points or minus signs", () => {
+    expect(normalizeIntegerInput("1.5")).toBe("1.5");
+    expect(normalizeIntegerInput("-100")).toBe("-100");
+    expect(normalizeIntegerInput("－１００")).toBe("-100");
+  });
+});
+
+describe("parseIntegerInput", () => {
+  it("accepts plain and full-width integers", () => {
+    expect(parseIntegerInput("1234")).toEqual({ ok: true, value: 1234 });
+    expect(parseIntegerInput("１２３４")).toEqual({ ok: true, value: 1234 });
   });
 
-  it("returns an empty string when nothing numeric was entered", () => {
-    expect(normalizeIntegerInput("abc")).toBe("");
+  it("accepts thousands separators and a 円 / ¥ notation", () => {
+    expect(parseIntegerInput("1,234円")).toEqual({ ok: true, value: 1234 });
+    expect(parseIntegerInput("¥1,234")).toEqual({ ok: true, value: 1234 });
+    expect(parseIntegerInput(" 500 ")).toEqual({ ok: true, value: 500 });
+  });
+
+  it("treats an empty field as null so the API can report it as required", () => {
+    expect(parseIntegerInput("")).toEqual({ ok: true, value: null });
+    expect(parseIntegerInput("  ")).toEqual({ ok: true, value: null });
+  });
+
+  it("rejects decimals instead of turning 1.5 into 15", () => {
+    expect(parseIntegerInput("1.5")).toMatchObject({ ok: false });
+    expect(parseIntegerInput("1,234.56円")).toMatchObject({ ok: false });
+  });
+
+  it("rejects negative values instead of turning -100 into 100", () => {
+    expect(parseIntegerInput("-100")).toMatchObject({ ok: false });
+    expect(parseIntegerInput("－１００")).toMatchObject({ ok: false });
+  });
+
+  it("rejects other characters and malformed separators", () => {
+    expect(parseIntegerInput("abc")).toMatchObject({ ok: false });
+    expect(parseIntegerInput("12a")).toMatchObject({ ok: false });
+    expect(parseIntegerInput("1,23")).toMatchObject({ ok: false });
   });
 });
 
