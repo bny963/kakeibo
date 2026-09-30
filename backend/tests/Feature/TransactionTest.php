@@ -177,4 +177,24 @@ class TransactionTest extends TestCase
 
         $this->assertDatabaseMissing('transactions', ['id' => $transaction->id]);
     }
+
+    public function test_expense_with_an_income_category_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->for($user)->create(['balance' => 10000]);
+        $incomeCategory = Category::factory()->for($user)->income()->create();
+
+        $response = $this->actingAs($user)->postJson('/api/transactions', [
+            'type' => 'expense',
+            'account_id' => $account->id,
+            'category_id' => $incomeCategory->id,
+            'amount' => 1000,
+            'date' => now()->toDateString(),
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('category_id');
+        $this->assertSame('収入・支出の種別に合ったカテゴリを選択してください', $response->json('errors.category_id.0'));
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertSame('10000.00', $account->fresh()->balance);
+    }
 }

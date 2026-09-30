@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -39,6 +41,29 @@ class TransactionRequest extends FormRequest
             'date' => ['required', 'date', 'after_or_equal:'.now()->subYears(20)->toDateString(), 'before_or_equal:'.now()->toDateString()],
             'note' => ['nullable', 'string', 'max:200'],
         ];
+    }
+
+    /**
+     * 取引の種別（収入/支出）とカテゴリの種別が一致すること。画面では種別ごとにカテゴリを出し分けているが、
+     * APIでも同じ制約を設け、支出に収入カテゴリを指定する等の不整合なデータを登録させない。
+     * 所有者チェック（exists）で既にエラーがある場合は重ねて出さない。
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if ($validator->errors()->hasAny(['type', 'category_id'])) {
+                return;
+            }
+
+            $categoryType = Category::query()
+                ->whereKey($this->input('category_id'))
+                ->where('user_id', $this->user()?->id)
+                ->value('type');
+
+            if ($categoryType !== null && $categoryType !== $this->input('type')) {
+                $validator->errors()->add('category_id', '収入・支出の種別に合ったカテゴリを選択してください');
+            }
+        });
     }
 
     /**
