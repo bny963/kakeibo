@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface StatTileProps {
   label: string;
-  value: number;
+  /** 未定義の場合は「取得中」を表示する（0円と区別するため、未取得を0に丸めない） */
+  value: number | undefined;
   /** 前月比の差額。upGood=trueなら増加が好ましい(収入・残高)、falseなら減少が好ましい(支出)。 */
   delta?: number;
   upGood?: boolean;
@@ -20,7 +21,11 @@ export function StatTile({ label, value, delta, upGood = true }: StatTileProps) 
     <Card>
       <CardContent className="p-5">
         <p className="text-sm text-ink-500">{label}</p>
-        <p className="mt-1 text-2xl font-semibold text-ink-900">{formatYen(value)}</p>
+        {value === undefined ? (
+          <p className="mt-1 text-2xl font-semibold text-ink-400">取得中...</p>
+        ) : (
+          <p className="mt-1 text-2xl font-semibold text-ink-900">{formatYen(value)}</p>
+        )}
         {delta !== undefined && (
           <p
             className={cn(

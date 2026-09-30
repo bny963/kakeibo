@@ -2,8 +2,9 @@ import * as React from "react";
 import { PiggyBank, Sparkles } from "lucide-react";
 import { usePiggyBankSkinCatalog, useThisWeek } from "@/features/piggyBank/api";
 import { PiggyBankCustomizeDialog } from "@/features/piggyBank/components/PiggyBankCustomizeDialog";
-import { patternBackgroundStyle } from "@/features/piggyBank/lib/skinPatterns";
-import { formatYen } from "@/lib/utils";
+import { skinHeaderStyle } from "@/features/piggyBank/lib/skinPatterns";
+import { FetchErrorNotice } from "@/components/FetchErrorNotice";
+import { formatMonthLabel, formatYen } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ interface PiggyBankMeterProps {
  * これは完全にコスメティックな任意要素で、進捗バーの状態色（green/gold/amber）には一切影響しない。
  */
 export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
-  const { data: week, isLoading } = useThisWeek();
+  const { data: week, isError, isFetching, refetch } = useThisWeek();
   const { data: skinCatalog } = usePiggyBankSkinCatalog();
   const [isCustomizeOpen, setCustomizeOpen] = React.useState(false);
 
@@ -40,13 +41,22 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
     <PiggyBankCustomizeDialog open={isCustomizeOpen} onOpenChange={setCustomizeOpen} />
   );
 
-  if (isLoading || !week) {
+  // 「取得中」と「取得失敗」を区別する。失敗時に「読み込み中」を出し続けると、利用者は待つしかなくなる。
+  if (!week) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-ink-400">読み込み中...</CardContent>
+        <CardContent className="p-6 text-sm text-ink-400">
+          {isError ? (
+            <FetchErrorNotice subject="今週の貯金箱" onRetry={() => refetch()} isRetrying={isFetching} />
+          ) : (
+            "今週の貯金箱を取得中..."
+          )}
+        </CardContent>
       </Card>
     );
   }
+
+  const planMonthLabel = formatMonthLabel(week.plan_month);
 
   if (!week.has_plan) {
     return (
@@ -54,11 +64,11 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <PiggyBank className="h-10 w-10 text-brand-600" />
           <p className="text-sm text-ink-700">
-            今月の手取り・固定費・貯金目標を設定すると、
+            {planMonthLabel}の手取り・固定費・貯金目標を設定すると、
             <br />
             1週間の利用可能額と貯金箱が使えるようになります。
           </p>
-          <Button onClick={onSetupPlan}>今月のプランを設定する</Button>
+          <Button onClick={onSetupPlan}>{planMonthLabel}のプランを設定する</Button>
         </CardContent>
         {customizeDialog}
       </Card>
@@ -73,7 +83,7 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
     <Card className="overflow-hidden">
       <CardHeader
         className="flex-row items-center justify-between gap-2 space-y-0"
-        style={patternBackgroundStyle(equippedPattern, equippedColor)}
+        style={skinHeaderStyle(equippedPattern, equippedColor)}
       >
         <div className="flex items-center gap-2">
           {equippedCharacter ? (

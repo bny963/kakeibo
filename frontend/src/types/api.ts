@@ -84,6 +84,8 @@ export interface PiggyBankWeekStatus {
   saved_amount: number;
   is_over_budget: boolean;
   has_plan: boolean;
+  /** この週の計算に使う月次プランの月（YYYY-MM）。週の木曜日が属する月。設定画面はこの月を開く。 */
+  plan_month: string;
 }
 
 export interface PiggyBankRecord {

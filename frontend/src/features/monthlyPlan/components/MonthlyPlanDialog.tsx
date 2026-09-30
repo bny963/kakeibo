@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMonthlyPlan, useSaveMonthlyPlan } from "@/features/monthlyPlan/api";
 import { getErrorMessage, getFieldErrors, isApiError } from "@/lib/api";
-import { normalizeIntegerInput, parseIntegerFields } from "@/lib/utils";
+import { formatMonthLabel, normalizeIntegerInput, parseIntegerFields } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,15 +74,16 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>今月のプランを設定</DialogTitle>
+          <DialogTitle>{formatMonthLabel(month)}のプランを設定</DialogTitle>
           <DialogDescription>
             手取り − 固定費 − 貯金目標 を4.3週で割った金額が、1週間の利用可能額になります。
+            月をまたぐ週は、その週の木曜日が属する月のプランで計算します。
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="plan-income">今月の手取り収入</Label>
+            <Label htmlFor="plan-income">{formatMonthLabel(month)}の手取り収入</Label>
             <Input
               id="plan-income"
               type="text"
