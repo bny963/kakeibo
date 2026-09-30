@@ -144,6 +144,11 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
           </div>
         </div>
 
+        <p className="mt-3 text-xs text-ink-400">
+          貯金箱の金額は「今週の利用可能額 − 記録した支出」で、実際の預金額ではありません。
+          記録していない支出は含まれないため、こまめに記録するほど正確になります。
+        </p>
+
         {week.is_over_budget && (
           <p className="mt-4 rounded-lg bg-caution-50 px-4 py-3 text-sm text-caution-600">
             今週は少し使いすぎたかも。来週リセットしてまた頑張りましょう。

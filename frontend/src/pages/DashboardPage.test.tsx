@@ -169,3 +169,12 @@ describe("PiggyBankMeter: きせかえの色", () => {
     expect(header.style.backgroundColor).toContain("70, 193, 153");
   });
 });
+
+describe("PiggyBankMeter: 貯金箱の金額の意味", () => {
+  it("記録された支出を基にした予算との差額であり、実際の預金額ではないことを表示する", async () => {
+    mockApi();
+    renderDashboard();
+
+    expect(await screen.findByText(/「今週の利用可能額 − 記録した支出」で、実際の預金額ではありません/)).toBeInTheDocument();
+  });
+});

@@ -82,10 +82,7 @@ class TransactionController extends Controller
      */
     public function store(TransactionRequest $request): JsonResponse
     {
-        $transaction = DB::transaction(fn () => $request->user()->transactions()->create([
-            ...$request->validated(),
-            'is_recurring' => false,
-        ]));
+        $transaction = DB::transaction(fn () => $request->user()->transactions()->create($request->transactionAttributes()));
 
         return response()->json($transaction->load(['account', 'category']), 201);
     }
@@ -102,7 +99,7 @@ class TransactionController extends Controller
     public function update(TransactionRequest $request, int $id): JsonResponse
     {
         $transaction = $request->user()->transactions()->findOrFail($id);
-        DB::transaction(fn () => $transaction->update($request->validated()));
+        DB::transaction(fn () => $transaction->update($request->transactionAttributes()));
 
         return response()->json($transaction->load(['account', 'category']));
     }

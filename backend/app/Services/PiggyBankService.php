@@ -30,8 +30,10 @@ class PiggyBankService
         $plan = $user->monthlyPlans()->where('month', $planMonth)->first();
         $weeklyAllowance = $plan?->weeklyAllowance() ?? 0.0;
 
+        // 固定費として記録した支出（is_recurring）は、月次プランの「固定費」で既に差し引いているため数えない
         $spent = (float) $user->transactions()
             ->where('type', 'expense')
+            ->where('is_recurring', false)
             ->whereBetween('date', [$weekStart->toDateString(), $weekEnd->toDateString()])
             ->sum('amount');
 
@@ -51,20 +53,35 @@ class PiggyBankService
 
     /**
      * 完了済みの週（デフォルトは先週）をpiggy_bank_recordsへ確定として記録する。
-     * 既に確定済みの場合は上書きしない（week_start_dateの一意制約により重複作成は起きない）。
+     *
+     * 既に確定済みの週は上書きせず、そのまま返す。確定後に取引を追加・訂正しても、家計簿の記録・
+     * レポート・口座残高には反映されるが、貯金箱の確定額とポイントは変わらない。
+     * - 記録が遅れたことでポイントが減る（記録するほど損をする）ことを避ける
+     * - 使用済みのポイントが後から減って残高がマイナスになることを避ける
+     * 以前はコメントでは「上書きしない」としつつ updateOrCreate で再計算していた。
+     *
+     * 進行中の週・未来の週は確定できない（貯まる前の金額でポイントが付与されてしまうため）。
      */
     public function finalizeWeek(User $user, ?CarbonImmutable $weekStart = null): PiggyBankRecord
     {
         $weekStart = ($weekStart ?? CarbonImmutable::now()->subWeek())->startOfWeek(CarbonImmutable::MONDAY);
+
+        if ($weekStart->greaterThanOrEqualTo(CarbonImmutable::now()->startOfWeek(CarbonImmutable::MONDAY))) {
+            throw new \InvalidArgumentException("進行中・未来の週は確定できません: {$weekStart->toDateString()}");
+        }
+
+        $existing = $user->piggyBankRecords()->whereDate('week_start_date', $weekStart->toDateString())->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+
         $status = $this->computeWeekStatus($user, $weekStart);
 
-        return $user->piggyBankRecords()->updateOrCreate(
-            ['week_start_date' => $status['week_start_date']],
-            [
-                'weekly_allowance' => $status['weekly_allowance'],
-                'spent_amount' => $status['spent_amount'],
-                'saved_amount' => $status['saved_amount'],
-            ],
-        );
+        return $user->piggyBankRecords()->create([
+            'week_start_date' => $status['week_start_date'],
+            'weekly_allowance' => $status['weekly_allowance'],
+            'spent_amount' => $status['spent_amount'],
+            'saved_amount' => $status['saved_amount'],
+        ]);
     }
 }
