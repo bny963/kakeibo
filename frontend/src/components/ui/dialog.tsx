@@ -22,31 +22,81 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * 画面のうち実際に見えている範囲（Visual Viewport）の位置と高さ。
+ *
+ * iOS Safari はキーボードを表示してもレイアウト上の画面の高さ（100dvh / innerHeight）を変えず、
+ * キーボードが画面下部に重なるだけになる。通常はページをスクロールして入力欄を見せるが、ダイアログ表示中は
+ * ページのスクロールが止まっているため、ダイアログ下部の入力欄や保存ボタンがキーボードの裏に隠れてしまう。
+ * 見えている範囲に合わせてダイアログを配置し、キーボードが開いたらフォーカス中の入力欄を見える位置へスクロールする。
+ */
+function useVisualViewportBox() {
+  const [box, setBox] = React.useState<{ top: number; height: number } | null>(null);
+
+  React.useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    let frame = 0;
+    const update = () => {
+      setBox({ top: viewport.offsetTop, height: viewport.height });
+      cancelAnimationFrame(frame);
+      // ダイアログの大きさが変わった後に、フォーカス中の入力欄が見える位置までダイアログ内をスクロールする
+      frame = requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest('[role="dialog"]') && active.matches("input, textarea")) {
+          active.scrollIntoView({ block: "nearest" });
+        }
+      });
+    };
+
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return box;
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPrimitive.Portal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      // スマートフォンでは画面上部に寄せ、高さを画面内に収めて中身をスクロールできるようにする。
-      // 以前は中央固定・高さ無制限だったため、キーボード表示中に説明文や保存ボタンへスクロールできなかった。
-      // scroll-pb は、フォーカスした入力欄が下部に固定した保存ボタン（DialogFooter）に隠れないようにするため。
-      className={cn(
-        "fixed left-1/2 top-4 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto overscroll-contain scroll-pb-24 rounded-card border border-ink-100 bg-white p-6 shadow-lg focus:outline-none sm:top-1/2 sm:-translate-y-1/2",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700 focus:outline-none">
-        <X className="h-4 w-4" />
-        <span className="sr-only">閉じる</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPrimitive.Portal>
-));
+>(({ className, children, style, ...props }, ref) => {
+  const viewportBox = useVisualViewportBox();
+
+  return (
+    <DialogPrimitive.Portal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        // スマートフォンでは見えている範囲の上部に寄せ、高さを見えている範囲に収めて中身をスクロールできるようにする
+        // （sm以上は見えている範囲の中央）。Visual Viewport 非対応のブラウザでは画面全体（100dvh）を基準にする。
+        // scroll-pb は、フォーカスした入力欄が下部に固定した保存ボタン（DialogFooter）に隠れないようにするため。
+        className={cn(
+          "fixed left-1/2 top-[calc(var(--vv-top,0px)+1rem)] z-50 max-h-[calc(var(--vv-height,100dvh)-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto overscroll-contain scroll-pb-24 rounded-card border border-ink-100 bg-white p-6 shadow-lg focus:outline-none sm:top-[calc(var(--vv-top,0px)+var(--vv-height,100dvh)/2)] sm:-translate-y-1/2",
+          className,
+        )}
+        style={
+          viewportBox
+            ? ({ "--vv-top": `${viewportBox.top}px`, "--vv-height": `${viewportBox.height}px`, ...style } as React.CSSProperties)
+            : style
+        }
+        {...props}
+      >
+        {children}
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700 focus:outline-none">
+          <X className="h-4 w-4" />
+          <span className="sr-only">閉じる</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
