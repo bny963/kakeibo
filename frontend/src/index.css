@@ -74,6 +74,9 @@ body {
   color: var(--color-ink-900);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* 日本語を文節の切れ目で折り返し、狭い画面で「と、」「ります。」だけが次の行に残らないようにする
+     （html lang="ja" が前提。対応していないブラウザ（Safari等）では通常の折り返しになる） */
+  word-break: auto-phrase;
 }
 
 * {
