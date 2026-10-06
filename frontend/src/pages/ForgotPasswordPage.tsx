@@ -31,8 +31,7 @@ export default function ForgotPasswordPage() {
           パスワードリセット
         </h1>
         <p className="text-sm text-ink-500">
-          パスワード再設定用のメールを送信しました（登録済みのメールアドレスの場合のみ届きます）。
-          メール内のリンクから新しいパスワードを設定してください。
+          パスワード再設定用のメールを送信しました（登録済みのメールアドレスの場合のみ届きます）。メール内のリンクから新しいパスワードを設定してください。
         </p>
         <div className="mt-6 flex justify-center text-sm">
           <Link to="/login" className="text-brand-600 hover:underline">

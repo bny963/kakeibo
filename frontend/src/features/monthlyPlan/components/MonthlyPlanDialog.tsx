@@ -76,8 +76,7 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
         <DialogHeader>
           <DialogTitle>{formatMonthLabel(month)}のプランを設定</DialogTitle>
           <DialogDescription>
-            手取り − 固定費 − 貯金目標 を4.3週（1か月の平均週数の概算）で割った金額が、1週間の利用可能額になります。
-            月をまたぐ週は、その週の木曜日が属する月のプランで計算します。
+            手取り − 固定費 − 貯金目標 を4.3週（1か月の平均週数の概算）で割った金額が、1週間の利用可能額になります。月をまたぐ週は、その週の木曜日が属する月のプランで計算します。
           </DialogDescription>
         </DialogHeader>
 
@@ -106,8 +105,7 @@ export function MonthlyPlanDialog({ open, onOpenChange, month }: MonthlyPlanDial
               onChange={(e) => setFixedCosts(normalizeIntegerInput(e.target.value))}
             />
             <p className="text-xs text-ink-500">
-              家賃・サブスクなどの毎月決まった支払いです。支払いを取引にも記録する場合は「固定費の支払い」として
-              記録すると、週の支出と二重に数えません。
+              家賃・サブスクなどの毎月決まった支払いです。支払いを取引にも記録する場合は「固定費の支払い」として記録すると、週の支出と二重に数えません。
             </p>
             {fieldErrors.fixed_costs && (
               <p className="text-sm text-ink-400">{fieldErrors.fixed_costs}</p>

@@ -63,10 +63,9 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
       <Card className="border-brand-200 bg-brand-50">
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <PiggyBank className="h-10 w-10 text-brand-600" />
-          <p className="text-sm text-ink-700">
-            {planMonthLabel}の手取り・固定費・貯金目標を設定すると、
-            <br />
-            1週間の利用可能額と貯金箱が使えるようになります。
+          {/* 強制改行をやめ、文節単位で折り返す（狭い画面で「と、」「ります。」だけが次の行に残らないように） */}
+          <p className="max-w-sm text-sm text-ink-700 [text-wrap:pretty]">
+            {planMonthLabel}の手取り・固定費・貯金目標を設定すると、1週間の利用可能額と貯金箱が使えるようになります。
           </p>
           <Button onClick={onSetupPlan}>{planMonthLabel}のプランを設定する</Button>
         </CardContent>
@@ -145,8 +144,7 @@ export function PiggyBankMeter({ onSetupPlan }: PiggyBankMeterProps) {
         </div>
 
         <p className="mt-3 text-xs text-ink-400">
-          貯金箱の金額は「今週の利用可能額 − 記録した支出」で、実際の預金額ではありません。
-          記録していない支出は含まれないため、こまめに記録するほど正確になります。
+          貯金箱の金額は「今週の利用可能額 − 記録した支出」で、実際の預金額ではありません。記録していない支出は含まれないため、こまめに記録するほど正確になります。
         </p>
 
         {week.is_over_budget && (

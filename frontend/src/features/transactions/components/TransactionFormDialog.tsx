@@ -259,8 +259,7 @@ export function TransactionFormDialog({
               <div className="flex flex-col gap-0.5">
                 <Label htmlFor="tx-is-recurring">固定費の支払いとして記録する</Label>
                 <p className="text-xs text-ink-500">
-                  家賃・サブスクなど、月のプランの「固定費」に含めた支払いです。二重に数えないよう、
-                  週の支出（貯金箱）には含めません。月のレポートと口座残高には反映されます。
+                  家賃・サブスクなど、月のプランの「固定費」に含めた支払いです。二重に数えないよう、週の支出（貯金箱）には含めません。月のレポートと口座残高には反映されます。
                 </p>
               </div>
             </div>

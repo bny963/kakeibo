@@ -30,8 +30,11 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      // スマートフォンでは画面上部に寄せ、高さを画面内に収めて中身をスクロールできるようにする。
+      // 以前は中央固定・高さ無制限だったため、キーボード表示中に説明文や保存ボタンへスクロールできなかった。
+      // scroll-pb は、フォーカスした入力欄が下部に固定した保存ボタン（DialogFooter）に隠れないようにするため。
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-card border border-ink-100 bg-white p-6 shadow-lg focus:outline-none",
+        "fixed left-1/2 top-4 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-y-auto overscroll-contain scroll-pb-24 rounded-card border border-ink-100 bg-white p-6 shadow-lg focus:outline-none sm:top-1/2 sm:-translate-y-1/2",
         className,
       )}
       {...props}
@@ -74,8 +77,18 @@ const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
+/**
+ * ダイアログ下部に固定し、中身をスクロールしても保存・キャンセルのボタンに常に手が届くようにする。
+ * -bottom-6 は DialogContent の下余白（p-6）の分。bottom-0 だと余白の分だけ浮き、下に入力欄が透けて見える。
+ */
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mt-6 flex justify-end gap-2", className)} {...props} />
+  <div
+    className={cn(
+      "sticky -bottom-6 -mx-6 -mb-6 mt-6 flex justify-end gap-2 border-t border-ink-100 bg-white px-6 py-4",
+      className,
+    )}
+    {...props}
+  />
 );
 
 export {
