@@ -5,3 +5,15 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
 </IfModule>
+
+# index.html は毎回サーバーに更新を確認させる（Cache-Control がないとブラウザが独自の判断でキャッシュし、
+# 反映後も古い画面が表示され続けることがあるため）。
+# assets/ の js・css はファイル名にハッシュが付き、中身が変わればファイル名も変わるため、長期間キャッシュしてよい。
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "^index-[A-Za-z0-9_-]+\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
