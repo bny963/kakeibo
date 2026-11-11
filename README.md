@@ -58,7 +58,7 @@ SSH が使えない本番（ロリポップ）では、`backend/public/_deploy.p
 
 | 領域 | 技術 |
 |---|---|
-| バックエンド | PHP 8.3 / Laravel 11 / Laravel Sanctum（SPA Cookie認証） |
+| バックエンド | PHP 8.3 / Laravel 13 / Laravel Sanctum（SPA Cookie認証） |
 | フロントエンド | TypeScript / React 18 + Vite + Tailwind CSS / shadcn/ui / TanStack Query / Recharts |
 | DB | MySQL 8 |
 | インフラ | Docker（バックエンド・DB） |
@@ -173,7 +173,7 @@ erDiagram
 
 ```
 kakeibo/
-├── backend/          # Laravel 11 API（/api/*）
+├── backend/          # Laravel 13 API（/api/*）
 ├── frontend/          # React 18 + Vite SPA
 ├── docker-compose.yml # MySQL 8 + バックエンドAPIコンテナ
 └── README.md
